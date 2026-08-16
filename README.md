@@ -28,24 +28,64 @@ slice is traceable end to end and the history stays readable months later.
 
 ## Quick start
 
-```sh
-# 1. Process layer, once per machine
-cp -r global/* ~/.config/opencode/
+**Recommended — clone it, don't copy it.** This is what makes future updates
+a plain `git pull` instead of re-running `cp` on every device and project
+every time something changes.
 
-# 2. Project layer, once per repo
+```sh
+# 1. Clone once per device, wherever you keep local repos
+git clone <your-fork-url> ~/dev/opencode-pipeline
+cd ~/dev/opencode-pipeline
+
+# 2. Process layer, once per device
+./scripts/install-global.sh
+# Symlinks ~/.config/opencode/{opencode.jsonc,AGENTS.md,prompts,commands,templates}
+# into this clone. Backs up anything already there. Creates
+# ~/.config/opencode/local-overrides.jsonc for personal tweaks that
+# `git pull` will never touch — it prints an OPENCODE_CONFIG export line
+# to add to your shell rc file; do that once.
+
+# 3. Project layer, once per repo
+cd /path/to/your/repo
+mkdir -p .opencode
+cp ~/dev/opencode-pipeline/project/AGENTS.md.example .opencode/AGENTS.md
+# optional — only if this repo needs different models or tighter permissions:
+cp ~/dev/opencode-pipeline/project/opencode.jsonc.example .opencode/opencode.jsonc
+
+# then, from that same clone:
+~/dev/opencode-pipeline/scripts/link-project.sh /path/to/your/repo
+# Symlinks just the three handoff templates — pure process, safe to
+# auto-update. Leaves opencode.jsonc and AGENTS.md as real files, since
+# those hold this project's actual facts.
+
+# 4. Fill in .opencode/AGENTS.md — especially the T3 floor
+# 5. Start OpenCode, run /init once, then /map to generate .opencode/MAP.md
+```
+
+From here, updating any device is:
+
+```sh
+cd ~/dev/opencode-pipeline && git pull
+```
+
+See [Updating across devices and projects](#updating-across-devices-and-projects)
+below for what does and doesn't update automatically.
+
+**No git, or just trying it once?** Skip the clone and use plain copies
+instead — you'll just be back to manual `cp` on every future update:
+
+```sh
+cp -r global/* ~/.config/opencode/
 cd /path/to/your/repo
 mkdir -p .opencode
 cp -r /path/to/opencode-pipeline/project/handoff .opencode/
 cp /path/to/opencode-pipeline/project/AGENTS.md.example .opencode/AGENTS.md
-# optional — only if this repo needs different models or tighter permissions:
-cp /path/to/opencode-pipeline/project/opencode.jsonc.example .opencode/opencode.jsonc
-
-# 3. Fill in .opencode/AGENTS.md — especially the T3 floor
-# 4. Start OpenCode, run /init once, then /map to generate .opencode/MAP.md
+cp /path/to/opencode-pipeline/project/opencode.jsonc.example .opencode/opencode.jsonc   # optional
 ```
 
-Then: `/plan <what you want>` → read the doc → `/arch <stem>` → read the doc →
-Tab to the agent the tier names → `/build <stem>` → `/handoff <stem>`.
+Then, either way: `/plan <what you want>` → read the doc → `/arch <stem>` →
+read the doc → Tab to the agent the tier names → `/build <stem>` →
+`/handoff <stem>`.
 
 `/ask <question>` works from any tab, any time, for something not worth
 interrupting that flow for.
@@ -191,50 +231,8 @@ reintroduce that pattern; use `.jsonc` and a real `//` comment line instead.
 
 ## Updating across devices and projects
 
-The install steps above use `cp`, which is fine for a one-time setup but means
-every future version bump is another round of manual copying across every
-device and project. There's a better way if you'll be pulling updates more
-than once: **symlink instead of copy.**
-
-### One-time setup, per device
-
-```sh
-git clone <your-fork-url> ~/dev/opencode-pipeline
-cd ~/dev/opencode-pipeline
-./scripts/install-global.sh
-```
-
-This links `~/.config/opencode/{opencode.jsonc,AGENTS.md,prompts,commands,templates}`
-straight into the clone, instead of copying them. It also creates
-`~/.config/opencode/local-overrides.jsonc` — a small file for personal,
-per-device tweaks (e.g. swapping a model) that `git pull` will never touch,
-loaded on top of the template via the `OPENCODE_CONFIG` environment variable.
-The script prints the export line to add to your shell rc file; do that once.
-
-From here on, updating this device is:
-
-```sh
-cd ~/dev/opencode-pipeline && git pull
-```
-
-Nothing else. The symlinks mean the update takes effect immediately.
-
-### One-time setup, per project
-
-```sh
-cd ~/dev/opencode-pipeline
-./scripts/link-project.sh ~/path/to/some-project
-```
-
-This links only the three handoff templates
-(`PLAN_TEMPLATE.md`/`SPEC_TEMPLATE.md`/`REPORT_TEMPLATE.md`) — pure process,
-safe to auto-update. It deliberately leaves `.opencode/opencode.jsonc` and
-`.opencode/AGENTS.md` alone, because those hold real project facts (crate map,
-T3 floor, permissions tuned to that repo) that were never meant to come from a
-generic template. The script diffs the project's `AGENTS.md` against the
-current `AGENTS.md.example` and tells you whether anything looks worth a
-manual look — it doesn't merge automatically, because a fact file shouldn't be
-silently rewritten by process tooling.
+Setup is covered in [Quick start](#quick-start) above — this section is just
+the mechanics of what happens on a version bump, once that's done.
 
 ### What updates automatically vs. what needs a manual pass
 
