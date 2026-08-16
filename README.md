@@ -107,7 +107,7 @@ Build agents check the tier in the spec header before doing anything and refuse
 work that is not theirs. `build-critical` requires per-edit approval, a binding
 file list, and a written adversarial pass before any code is written.
 
-**Fill in the T3 floor yourself.** `/init-pipeline` deliberately leaves it as
+**Fill in the T3 floor yourself.** `/init` deliberately leaves it as
 TODO. An agent guessing at what is safety-critical in your project defeats the
 purpose of having a floor at all.
 
@@ -177,6 +177,9 @@ project/                        → <repo>/.opencode/
   opencode.jsonc.example        placeholder-marked, only if you need overrides
   AGENTS.md.example             module map + T3 floor skeleton
   handoff/                      templates and the three stage directories
+scripts/
+  install-global.sh             one-time per-device setup: symlinks global/ in
+  link-project.sh               one-time per-project setup: symlinks handoff templates
 ```
 
 **On file extensions:** `.jsonc` (not `.json`) throughout this template,
@@ -185,6 +188,77 @@ key literally named `"//"` is *not* a comment in either format — it's a real
 property name, and OpenCode's `permission` schema validates every key inside
 a `permission` block strictly, so a `"//"` key there fails to load. Don't
 reintroduce that pattern; use `.jsonc` and a real `//` comment line instead.
+
+## Updating across devices and projects
+
+The install steps above use `cp`, which is fine for a one-time setup but means
+every future version bump is another round of manual copying across every
+device and project. There's a better way if you'll be pulling updates more
+than once: **symlink instead of copy.**
+
+### One-time setup, per device
+
+```sh
+git clone <your-fork-url> ~/dev/opencode-pipeline
+cd ~/dev/opencode-pipeline
+./scripts/install-global.sh
+```
+
+This links `~/.config/opencode/{opencode.jsonc,AGENTS.md,prompts,commands,templates}`
+straight into the clone, instead of copying them. It also creates
+`~/.config/opencode/local-overrides.jsonc` — a small file for personal,
+per-device tweaks (e.g. swapping a model) that `git pull` will never touch,
+loaded on top of the template via the `OPENCODE_CONFIG` environment variable.
+The script prints the export line to add to your shell rc file; do that once.
+
+From here on, updating this device is:
+
+```sh
+cd ~/dev/opencode-pipeline && git pull
+```
+
+Nothing else. The symlinks mean the update takes effect immediately.
+
+### One-time setup, per project
+
+```sh
+cd ~/dev/opencode-pipeline
+./scripts/link-project.sh ~/path/to/some-project
+```
+
+This links only the three handoff templates
+(`PLAN_TEMPLATE.md`/`SPEC_TEMPLATE.md`/`REPORT_TEMPLATE.md`) — pure process,
+safe to auto-update. It deliberately leaves `.opencode/opencode.jsonc` and
+`.opencode/AGENTS.md` alone, because those hold real project facts (crate map,
+T3 floor, permissions tuned to that repo) that were never meant to come from a
+generic template. The script diffs the project's `AGENTS.md` against the
+current `AGENTS.md.example` and tells you whether anything looks worth a
+manual look — it doesn't merge automatically, because a fact file shouldn't be
+silently rewritten by process tooling.
+
+### What updates automatically vs. what needs a manual pass
+
+| File | Updates on `git pull`? |
+|---|---|
+| Global `opencode.jsonc`, `AGENTS.md`, `prompts/`, `commands/`, `templates/` | Yes — pure process |
+| Project handoff templates (`*_TEMPLATE.md`) | Yes — pure process |
+| Project `opencode.jsonc` (the filled instance) | No — has to hold real facts, edit by hand |
+| Project `AGENTS.md` (the filled instance) | No — same reason |
+
+A version bump that only touches prompts, commands, or templates needs zero
+action from you beyond the `git pull`. A version bump that changes something
+structural in `opencode.json` itself — a new agent, a changed permission
+default — is worth a quick look at what changed and a manual decision about
+whether to port it into each project's filled config. The `CHANGELOG.md` in
+this repo (start one if you haven't) is the right place to flag which kind of
+change a release is, so you're not diffing blind.
+
+### On other machines
+
+The same clone-and-link steps apply to any machine — laptop, work desktop,
+wherever. Each device needs its own clone and its own one-time
+`install-global.sh` run, but after that, `git pull` on that device's clone is
+the entire update procedure, same as any other machine tracking the same repo.
 
 ## Adapting it
 
