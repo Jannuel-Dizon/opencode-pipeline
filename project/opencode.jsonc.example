@@ -1,0 +1,187 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // PROJECT LAYER — facts, not process. Copy to .opencode/opencode.json.
+  // If this file defines agents at all, it must define ALL of them. Do
+  // not rely on partial inheritance from global — one agent name with two
+  // definitions is how you end up unsure which one ran.
+  // Pipeline version: 1.1.0
+  "default_agent": "plan",
+  "subagent_depth": 1,
+
+  "agent": {
+    "plan": {
+      "mode": "primary",
+      "description": "Stage 1. Designs a slice with you. Reads project shape, never implementation bodies.",
+      "model": "opencode/claude-sonnet-5",
+      "temperature": 0.3,
+      "prompt": "{file:~/.config/opencode/prompts/plan.md}",
+      "permission": {
+        // TIGHTEN THESE TO YOUR LAYOUT. Catch-all first, denies next, allows last — last match wins.
+        "read": {
+          "*": "allow",
+          "<SOURCE_GLOB e.g. src/**/*.<EXT>>": "deny",
+          "<PUBLIC_ENTRY_POINTS e.g. **/lib.rs>": "allow",
+          "**/*.md": "allow",
+          "**/<MANIFEST e.g. Cargo.toml>": "allow",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": { "*": "deny", ".opencode/handoff/1-plan/**": "allow" },
+        "grep": "deny",
+        "glob": "allow",
+        "bash": "deny",
+        "task": { "*": "deny", "explore": "allow" }
+      }
+    },
+
+    "arch": {
+      "mode": "primary",
+      "description": "Stage 2. Verifies a plan against the codebase, assigns a tier, writes a spec.",
+      "model": "opencode/claude-opus-5",
+      "temperature": 0.2,
+      "prompt": "{file:~/.config/opencode/prompts/arch.md}",
+      "permission": {
+        "read": { "*": "allow", "*.env": "deny", "*.env.*": "deny" },
+        "edit": { "*": "deny", ".opencode/handoff/2-spec/**": "allow" },
+        "bash": {
+          "*": "ask",
+          "ls*": "allow",
+          "rg *": "allow",
+          "git log*": "allow",
+          "git show*": "allow",
+          "git diff*": "allow",
+          "<READ_ONLY_BUILD_QUERY e.g. cargo tree*>": "allow",
+          "rm *": "deny",
+          "git commit*": "deny",
+          "git push*": "deny"
+        },
+        "task": { "*": "deny", "explore": "allow" }
+      }
+    },
+
+    "build": {
+      "mode": "primary",
+      "description": "Stage 3, tier T1 (routine).",
+      "model": "opencode/deepseek-v4-flash",
+      "temperature": 0.1,
+      "prompt": "{file:~/.config/opencode/prompts/build.md}",
+      "permission": {
+        "edit": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
+        "bash": {
+          "*": "ask",
+          "<CHECK_COMMAND e.g. ./Check.sh*>": "allow",
+          "<BUILD_COMMAND e.g. cargo *>": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "rm *": "deny",
+          "git commit*": "ask",
+          "git push*": "deny"
+        },
+        "task": { "*": "deny", "explore": "allow" }
+      }
+    },
+
+    "build-hard": {
+      "mode": "primary",
+      "description": "Stage 3, tier T2 (hard).",
+      "model": "opencode/deepseek-v4-pro",
+      "temperature": 0.1,
+      "prompt": "{file:~/.config/opencode/prompts/build-hard.md}",
+      "permission": {
+        "edit": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
+        "bash": {
+          "*": "ask",
+          "<CHECK_COMMAND>": "allow",
+          "<BUILD_COMMAND>": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "rm *": "deny",
+          "git commit*": "ask",
+          "git push*": "deny"
+        },
+        "task": { "*": "deny", "explore": "allow" }
+      }
+    },
+
+    "build-critical": {
+      "mode": "primary",
+      "description": "Stage 3, tier T3 (critical). Narrow scope, per-edit approval.",
+      "model": "opencode/claude-opus-5",
+      "temperature": 0.1,
+      "prompt": "{file:~/.config/opencode/prompts/build-critical.md}",
+      "permission": {
+        // Every edit is approved individually here. Do not choose 'always' at a T3 prompt.
+        "edit": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
+        "bash": {
+          "*": "ask",
+          "<CHECK_COMMAND>": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "rm *": "deny",
+          "git commit*": "ask",
+          "git push*": "deny"
+        },
+        "task": { "*": "deny", "explore": "allow" }
+      }
+    },
+
+    "explore": {
+      "mode": "subagent",
+      "description": "Read-only lookup. Answers one question in prose with file:line references.",
+      "model": "opencode/deepseek-v4-flash",
+      "temperature": 0.1,
+      "prompt": "{file:~/.config/opencode/prompts/explore.md}",
+      "permission": {
+        "read": { "*": "allow", "*.env": "deny", "*.env.*": "deny" },
+        "grep": "allow",
+        "glob": "allow",
+        "edit": "deny",
+        "bash": "deny",
+        "webfetch": "deny",
+        "task": "deny"
+      }
+    },
+
+    "ask": {
+      "mode": "primary",
+      "description": "Casual Q&A, outside the pipeline. No handoff doc, no template, no tier.",
+      "model": "opencode/deepseek-v4-flash-free",
+      "temperature": 0.3,
+      "prompt": "{file:~/.config/opencode/prompts/ask.md}",
+      "permission": {
+        "read": { "*": "allow", "*.env": "deny", "*.env.*": "deny" },
+        "edit": "deny",
+        "grep": "allow",
+        "glob": "allow",
+        "bash": {
+          "*": "ask",
+          "ls*": "allow",
+          "cat *": "allow",
+          "rg *": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "rm *": "deny",
+          "git commit*": "deny",
+          "git push*": "deny"
+        },
+        "task": "deny"
+      }
+    }
+  }
+}

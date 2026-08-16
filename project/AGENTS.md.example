@@ -1,0 +1,94 @@
+# <PROJECT NAME> — project facts
+
+Pipeline version: **1.1.0**
+
+Process rules live in `~/.config/opencode/AGENTS.md` and apply here unchanged.
+This file adds facts about *this* project. It does not relax anything.
+
+---
+
+## What this project is
+
+<Two or three sentences. What it does, who uses it, what "correct" means here.>
+
+**Scope of this repo:** <what lives here and what lives in a sibling repo or
+another team's system>
+
+## Module map
+
+| Module | Purpose | State |
+|---|---|---|
+| `<name>` | <one line> | built / partial / stub |
+
+**Dependency direction:** <who may depend on whom, and what must never be a
+dependency of what>
+
+See `.opencode/MAP.md` for the generated detail. Regenerate it with `/map`
+after any structural change.
+
+---
+
+## T3 floor — ALWAYS CRITICAL
+
+**This section is a human decision. Do not let an agent fill it in.**
+
+Any slice touching a path or concern below is tier **T3** regardless of how
+small the change looks. The architect may escalate above this list. The
+architect may not go below it, and may not split a slice so that part of it
+escapes the list.
+
+**Paths:**
+
+- `<path/to/critical/module>` — <why>
+
+**Concerns, wherever they appear:**
+
+- <e.g. anything that writes to persistent storage irreversibly>
+- <e.g. authentication, key material, signature verification>
+- <e.g. any code path reached during recovery from a failure>
+
+**Why each of these is here:** <one line each. A floor whose reasoning is
+undocumented gets quietly eroded the first time it is inconvenient.>
+
+---
+
+## Commands
+
+| Purpose | Command | Notes |
+|---|---|---|
+| Check | `<command>` | <what green means, what it does not cover> |
+| Test | `<command>` | |
+| Build | `<command>` | |
+
+**What no command here can verify:** <the things that need real hardware, a
+staging environment, or a human. Be explicit — this is what stops "green" from
+being read as "works".>
+
+---
+
+## Conventions
+
+- <naming, error handling, module layout, formatting>
+- <anything an agent would get wrong by defaulting to the language's usual style>
+
+## Dependencies
+
+- **Adding one requires asking.** <Where the docs live, how versions are
+  pinned, anything that must be regenerated after a change.>
+- **Pinned by:** <lockfile / manifest / other>
+
+## Cross-boundary contracts
+
+Systems this project must agree with but does not own:
+
+| Contract | Other side | Status |
+|---|---|---|
+| <e.g. wire format> | <team / service> | open / provisional / settled |
+
+Never resolve one of these inside this repo. Name it and stop.
+
+## Compliance and regulatory constraints
+
+<Any standard, regulation, or certification the code must satisfy, and which
+parts of the codebase it constrains. If none, say "none" — an empty section
+reads as an oversight.>

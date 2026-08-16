@@ -1,0 +1,272 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "plan",
+  "subagent_depth": 1,
+
+  "permission": {
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow"
+    },
+    "bash": {
+      "*": "ask",
+      "ls*": "allow",
+      "cat *": "allow",
+      "rg *": "allow",
+      "git status*": "allow",
+      "git log*": "allow",
+      "git diff*": "allow",
+      "git show*": "allow",
+      "rm *": "deny",
+      "git push*": "deny"
+    },
+    "external_directory": {
+      "*": "ask"
+    },
+    "doom_loop": "ask"
+  },
+
+  "agent": {
+    "plan": {
+      "mode": "primary",
+      "description": "Stage 1. Designs a slice with you. Reads project shape, never implementation bodies. Writes to handoff/1-plan/.",
+      "model": "opencode/claude-sonnet-5",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/plan.md}",
+      "permission": {
+        "read": {
+          "*": "allow",
+          "**/*.rs": "deny",
+          "**/*.ts": "deny",
+          "**/*.tsx": "deny",
+          "**/*.js": "deny",
+          "**/*.jsx": "deny",
+          "**/*.py": "deny",
+          "**/*.go": "deny",
+          "**/*.java": "deny",
+          "**/*.c": "deny",
+          "**/*.h": "deny",
+          "**/*.cpp": "deny",
+          "**/*.hpp": "deny",
+          "**/lib.rs": "allow",
+          "**/mod.rs": "allow",
+          "**/index.ts": "allow",
+          "**/*.d.ts": "allow",
+          "**/__init__.py": "allow",
+          "**/*.md": "allow",
+          "**/*.toml": "allow",
+          "**/*.json": "allow",
+          "**/*.yaml": "allow",
+          "**/*.yml": "allow",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": {
+          "*": "deny",
+          ".opencode/handoff/1-plan/**": "allow"
+        },
+        "grep": "deny",
+        "glob": "allow",
+        "bash": "deny",
+        "task": {
+          "*": "deny",
+          "explore": "allow"
+        }
+      }
+    },
+
+    "arch": {
+      "mode": "primary",
+      "description": "Stage 2. Verifies a plan against the real codebase, assigns a build tier, writes a spec to handoff/2-spec/. Never edits source.",
+      "model": "opencode/claude-opus-5",
+      "temperature": 0.2,
+      "prompt": "{file:./prompts/arch.md}",
+      "permission": {
+        "read": {
+          "*": "allow",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": {
+          "*": "deny",
+          ".opencode/handoff/2-spec/**": "allow"
+        },
+        "grep": "allow",
+        "glob": "allow",
+        "bash": {
+          "*": "ask",
+          "ls*": "allow",
+          "find *": "allow",
+          "rg *": "allow",
+          "grep *": "allow",
+          "wc *": "allow",
+          "git status*": "allow",
+          "git log*": "allow",
+          "git diff*": "allow",
+          "git show*": "allow",
+          "cargo tree*": "allow",
+          "cargo metadata*": "allow",
+          "rm *": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git checkout*": "deny",
+          "git reset*": "deny"
+        },
+        "task": {
+          "*": "deny",
+          "explore": "allow"
+        }
+      }
+    },
+
+    "build": {
+      "mode": "primary",
+      "description": "Stage 3, tier T1 (routine). Implements a T1 spec. Cheap model, mechanical work only.",
+      "model": "opencode/deepseek-v4-flash",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/build.md}",
+      "permission": {
+        "edit": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
+        "bash": {
+          "*": "ask",
+          "ls*": "allow",
+          "rg *": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "rm *": "deny",
+          "git commit*": "ask",
+          "git push*": "deny",
+          "git reset*": "deny"
+        },
+        "task": {
+          "*": "deny",
+          "explore": "allow"
+        }
+      }
+    },
+
+    "build-hard": {
+      "mode": "primary",
+      "description": "Stage 3, tier T2 (hard). Implements a T2 spec. Non-obvious logic spanning modules.",
+      "model": "opencode/deepseek-v4-pro",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/build-hard.md}",
+      "permission": {
+        "edit": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
+        "bash": {
+          "*": "ask",
+          "ls*": "allow",
+          "rg *": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "rm *": "deny",
+          "git commit*": "ask",
+          "git push*": "deny",
+          "git reset*": "deny"
+        },
+        "task": {
+          "*": "deny",
+          "explore": "allow"
+        }
+      }
+    },
+
+    "build-critical": {
+      "mode": "primary",
+      "description": "Stage 3, tier T3 (critical). Safety- or security-critical code only. Narrow scope, per-edit approval, adversarial pass required.",
+      "model": "opencode/claude-opus-5",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/build-critical.md}",
+      "permission": {
+        "edit": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
+        "bash": {
+          "*": "ask",
+          "ls*": "allow",
+          "rg *": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "rm *": "deny",
+          "git commit*": "ask",
+          "git push*": "deny",
+          "git reset*": "deny"
+        },
+        "task": {
+          "*": "deny",
+          "explore": "allow"
+        }
+      }
+    },
+
+    "explore": {
+      "mode": "subagent",
+      "description": "Read-only lookup. Answers one specific question about the codebase in prose. Returns findings and file:line references, never file dumps.",
+      "model": "opencode/deepseek-v4-flash",
+      "temperature": 0.1,
+      "prompt": "{file:./prompts/explore.md}",
+      "permission": {
+        "read": {
+          "*": "allow",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "grep": "allow",
+        "glob": "allow",
+        "edit": "deny",
+        "bash": "deny",
+        "webfetch": "deny",
+        "task": "deny"
+      }
+    },
+
+    "ask": {
+      "mode": "primary",
+      "description": "Casual Q&A, outside the pipeline. No handoff doc, no template, no tier. For quick questions not worth a planning session.",
+      "model": "opencode/deepseek-v4-flash-free",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/ask.md}",
+      "permission": {
+        "read": {
+          "*": "allow",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": "deny",
+        "grep": "allow",
+        "glob": "allow",
+        "bash": {
+          "*": "ask",
+          "ls*": "allow",
+          "cat *": "allow",
+          "rg *": "allow",
+          "git status*": "allow",
+          "git log*": "allow",
+          "git diff*": "allow",
+          "rm *": "deny",
+          "git commit*": "deny",
+          "git push*": "deny"
+        },
+        "task": "deny"
+      }
+    }
+  }
+}
