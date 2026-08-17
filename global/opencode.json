@@ -2,7 +2,6 @@
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "plan",
   "subagent_depth": 1,
-
   "permission": {
     "read": {
       "*": "allow",
@@ -27,12 +26,11 @@
     },
     "doom_loop": "ask"
   },
-
   "agent": {
     "plan": {
       "mode": "primary",
       "description": "Stage 1. Designs a slice with you. Reads project shape, never implementation bodies. Writes to handoff/1-plan/.",
-      "model": "opencode/claude-sonnet-5",
+      "model": "opencode/deepseek-v4-flash",
       "temperature": 0.3,
       "prompt": "{file:./prompts/plan.md}",
       "permission": {
@@ -76,11 +74,10 @@
         }
       }
     },
-
     "arch": {
       "mode": "primary",
       "description": "Stage 2. Verifies a plan against the real codebase, assigns a build tier, writes a spec to handoff/2-spec/. Never edits source.",
-      "model": "opencode/claude-opus-5",
+      "model": "opencode/deepseek-v4-pro",
       "temperature": 0.2,
       "prompt": "{file:./prompts/arch.md}",
       "permission": {
@@ -120,11 +117,10 @@
         }
       }
     },
-
     "build": {
       "mode": "primary",
       "description": "Stage 3, tier T1 (routine). Implements a T1 spec. Cheap model, mechanical work only.",
-      "model": "opencode/deepseek-v4-flash",
+      "model": "opencode/deepseek-v4-flash-free",
       "temperature": 0.1,
       "prompt": "{file:./prompts/build.md}",
       "permission": {
@@ -152,11 +148,10 @@
         }
       }
     },
-
     "build-hard": {
       "mode": "primary",
       "description": "Stage 3, tier T2 (hard). Implements a T2 spec. Non-obvious logic spanning modules.",
-      "model": "opencode/deepseek-v4-pro",
+      "model": "opencode/deepseek-v4-flash",
       "temperature": 0.1,
       "prompt": "{file:./prompts/build-hard.md}",
       "permission": {
@@ -184,7 +179,6 @@
         }
       }
     },
-
     "build-critical": {
       "mode": "primary",
       "description": "Stage 3, tier T3 (critical). Safety- or security-critical code only. Narrow scope, per-edit approval, adversarial pass required.",
@@ -216,7 +210,6 @@
         }
       }
     },
-
     "explore": {
       "mode": "subagent",
       "description": "Read-only lookup. Answers one specific question about the codebase in prose. Returns findings and file:line references, never file dumps.",
@@ -237,7 +230,6 @@
         "task": "deny"
       }
     },
-
     "ask": {
       "mode": "primary",
       "description": "Casual Q&A, outside the pipeline. No handoff doc, no template, no tier. For quick questions not worth a planning session.",

@@ -4,7 +4,7 @@ A three-stage development pipeline for OpenCode: **plan → architecture →
 build**, with a markdown document at every seam and a hard stop between stages.
 Plus `ask`, a fourth agent that sits outside the pipeline for quick questions.
 
-Version **1.3.1**.
+Version **1.5.1**.
 
 ## What it is for
 
@@ -88,19 +88,26 @@ read the doc → Tab to the agent the tier names → `/build <stem>` →
 `/handoff <stem>`.
 
 `/ask <question>` works from any tab, any time, for something not worth
-interrupting that flow for.
+interrupting that flow for. `/status [scope]` and `/tickets [filter]` are the
+same idea, aimed specifically at the handoff record and the work item index.
 
 ## The agents
 
 | Agent | Stage | Default model | Can it edit source? |
 |---|---|---|---|
-| `plan` | 1 | Claude Sonnet 5 | No — only `handoff/1-plan/` |
-| `arch` | 2 | Claude Opus 5 | No — only `handoff/2-spec/` |
-| `build` | 3 · T1 | DeepSeek V4 Flash | Yes, on approval |
-| `build-hard` | 3 · T2 | DeepSeek V4 Pro | Yes, on approval |
+| `plan` | 1 | DeepSeek V4 Flash | No — only `handoff/1-plan/` |
+| `arch` | 2 | DeepSeek V4 Pro | No — only `handoff/2-spec/` |
+| `build` | 3 · T1 | DeepSeek V4 Flash **(free)** | Yes, on approval |
+| `build-hard` | 3 · T2 | DeepSeek V4 Flash | Yes, on approval |
 | `build-critical` | 3 · T3 | Claude Opus 5 | Yes, per-edit approval |
 | `explore` | subagent | DeepSeek V4 Flash | No — read-only |
 | `ask` | outside the pipeline | DeepSeek V4 Flash **(free)** | No — read-only |
+
+`build-critical` is deliberately the one agent that stays on a frontier model.
+It is also the rarest and the narrowest — a binding file list, per-edit
+approval, so its context stays small and it contributes very little to the
+bill. Downgrading it saves cents per slice and spends them on the one tier
+where a wrong answer is a bricked device rather than a failed build.
 
 Tab switches between primary agents. Models are OpenCode Zen ids; swap them for
 any provider by editing the `model` field.
@@ -191,6 +198,12 @@ architect is the expensive one because it does.
 
 The levers, in order of effect:
 
+0. **Pick the tier down.** The single biggest lever, and the one applied in
+   the defaults above: `arch` on a frontier model reading a whole codebase is
+   where most of a slice's cost lands. Moving it to a strong mid-tier model
+   typically cuts a full plan→arch→build pass by several times over.
+
+
 1. **Scope the architect.** Give it a slice and a file list, not "look at the
    repo".
 2. **Use `explore`.** It reads on a cheap model and returns prose. A file the
@@ -201,8 +214,27 @@ The levers, in order of effect:
 4. **Keep T3 narrow.** Narrow scope is simultaneously the safety property and
    the cost control.
 
-Do not route work through the free-tier models on a project you care about.
-Several providers' free tiers reserve the right to train on submitted data.
+### DeepSeek peak vs off-peak
+
+DeepSeek V4 Flash and Pro are billed at **half price outside peak hours**.
+Peak is 01:00–04:00 and 06:00–10:00 UTC. Convert that to your own timezone
+before assuming it doesn't matter — for UTC+8, peak lands on roughly
+09:00–12:00 and 14:00–18:00 local, which is precisely the working day. A long
+architecture session moved to late afternoon or evening costs half what the
+same session costs mid-morning.
+
+### On free-tier models
+
+Zen's free models — including DeepSeek V4 Flash Free — carry a data-retention
+caveat the paid tier does not: during the free period, submitted data may be
+used to improve the model. Everything else on Zen is zero-retention.
+
+That is a per-project judgement, not a universal answer. For `ask` (read-only,
+no artifacts) and for T1 work on a hobby project it is usually fine. For T1
+work on proprietary code it means your source is leaving the zero-retention
+boundary for a saving of a fraction of a cent per slice — worth deciding
+deliberately rather than inheriting. Switching `build` to the paid
+`opencode/deepseek-v4-flash` is a one-line change.
 
 ## Files
 
@@ -211,7 +243,7 @@ global/                         → ~/.config/opencode/
   opencode.json                 seven agents: models and permissions
   AGENTS.md                     rules that apply to every stage
   prompts/                      one system prompt per agent
-  commands/                     /plan /arch /build /handoff /map /init /ask /tickets
+  commands/                     /plan /arch /build /handoff /map /init /ask /tickets /status
   templates/                    the three handoff templates
 project/                        → <repo>/.opencode/
   opencode.jsonc.example        placeholder-marked, only if you need overrides
@@ -376,6 +408,16 @@ agents — you pick. Then `/plan <ID> <what you want>` starts the pipeline
 normally. The ticket's definition-of-done carries into the spec's acceptance
 section; its dependencies carry into the plan's; its parent story's user
 story carries into the plan's own intent section.
+
+`/status [scope]` is the same idea pointed at the *pipeline's own* history —
+what's been planned, specced, and actually built, distinguishing `complete`
+from `partial`/`stopped`/still-in-progress rather than rounding everything
+up to "done". It's a summary for the conversation, not a new record: if a
+status write-up should persist, that's what `/handoff` and a real report are
+for. Letting a convenient Q&A answer quietly become a second, informal
+decision record is exactly the failure mode the stop-and-print discipline
+elsewhere in this pipeline exists to prevent — `ask` deliberately can't
+write files at all, so this can't happen by accident.
 
 ### Rerunning as tickets change
 

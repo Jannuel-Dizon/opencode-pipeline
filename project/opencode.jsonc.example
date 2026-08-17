@@ -13,7 +13,7 @@
     "plan": {
       "mode": "primary",
       "description": "Stage 1. Designs a slice with you. Reads project shape, never implementation bodies.",
-      "model": "opencode/claude-sonnet-5",
+      "model": "opencode/deepseek-v4-flash",
       "temperature": 0.3,
       "prompt": "{file:~/.config/opencode/prompts/plan.md}",
       "permission": {
@@ -38,7 +38,7 @@
     "arch": {
       "mode": "primary",
       "description": "Stage 2. Verifies a plan against the codebase, assigns a tier, writes a spec.",
-      "model": "opencode/claude-opus-5",
+      "model": "opencode/deepseek-v4-pro",
       "temperature": 0.2,
       "prompt": "{file:~/.config/opencode/prompts/arch.md}",
       "permission": {
@@ -63,7 +63,7 @@
     "build": {
       "mode": "primary",
       "description": "Stage 3, tier T1 (routine).",
-      "model": "opencode/deepseek-v4-flash",
+      "model": "opencode/deepseek-v4-flash-free",
       "temperature": 0.1,
       "prompt": "{file:~/.config/opencode/prompts/build.md}",
       "permission": {
@@ -90,7 +90,7 @@
     "build-hard": {
       "mode": "primary",
       "description": "Stage 3, tier T2 (hard).",
-      "model": "opencode/deepseek-v4-pro",
+      "model": "opencode/deepseek-v4-flash",
       "temperature": 0.1,
       "prompt": "{file:~/.config/opencode/prompts/build-hard.md}",
       "permission": {

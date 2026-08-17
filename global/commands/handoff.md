@@ -3,6 +3,10 @@ description: Write the change report for the slice just built
 ---
 
 <summary>
+You MUST first confirm you are running as build, build-hard, or build-critical
+— the agent that actually did the work. If you are plan, arch, ask, or
+anything else, refuse and tell the human to switch to the build agent that
+ran this slice. Do not write a report for work you didn't do.
 You MUST write a change report for the work completed in this session.
 You SHOULD record every file touched with its full path, and be exact about
 what was and was not actually run.
@@ -12,6 +16,12 @@ You MUST print the report's absolute path and full contents, then stop.
 <stem>
 $ARGUMENTS
 </stem>
+
+If you are not one of the three build agents, stop here — do not read the
+rest of this command. A report is a claim that specific work was verified in
+this session. An agent that never ran the build has nothing to verify and
+nothing to report; writing one anyway would put an unearned claim into the
+project's decision record.
 
 Follow `.opencode/handoff/REPORT_TEMPLATE.md`. Write to
 `.opencode/handoff/3-report/$ARGUMENTS.report.md`.

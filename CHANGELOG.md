@@ -5,6 +5,73 @@ process — prompts, commands, templates) or needs a manual look at each
 project's filled `opencode.jsonc` / `AGENTS.md` (structural — new agents,
 changed defaults, changed permission shape).
 
+## 1.5.1
+
+**Safe to pull.** Prompt-only fix — no agent, permission, or model changes.
+
+- **Fixed:** `/handoff` had no agent guard, unlike every other stage-bound
+  command. In practice the permission system already prevents `plan`, `arch`,
+  or `ask` from actually writing to `3-report/` — each is scoped to its own
+  directory or, for `ask`, denied edit outright — so no fabricated report
+  could ever land on disk. But without a guard, running `/handoff` from the
+  wrong agent meant composing a full report, hitting a silent write denial,
+  and possibly printing the fabricated content into chat as if it had saved.
+  `/handoff` now checks it's running as `build`, `build-hard`, or
+  `build-critical` before doing anything, and refuses with a redirect
+  otherwise — same self-check pattern `/build` already uses for tier
+  matching, applied to agent identity instead.
+
+## 1.5.0
+
+**Manual step required** if your project pins its own models: this changes
+default model assignments. Projects with an `agent` block in their own
+`opencode.jsonc` keep whatever they already pin — update those by hand.
+
+Cost-driven retiering after a real measurement: one plan→arch→build-hard pass
+came in at ~$3.50, with `arch` on a frontier model reading the codebase
+accounting for most of it.
+
+| Agent | Was | Now |
+|---|---|---|
+| `plan` | Claude Sonnet 5 | DeepSeek V4 Flash |
+| `arch` | Claude Opus 5 | DeepSeek V4 Pro |
+| `build` (T1) | DeepSeek V4 Flash | DeepSeek V4 Flash Free |
+| `build-hard` (T2) | DeepSeek V4 Pro | DeepSeek V4 Flash |
+| `build-critical` (T3) | Claude Opus 5 | **unchanged** |
+
+- `build-critical` deliberately stays on Opus 5. It is the rarest agent and
+  the narrowest by design (binding file list, per-edit approval), so its
+  context stays small and it contributes little to the bill — downgrading it
+  saves cents per slice on the one tier where a wrong answer is a bricked
+  device rather than a failed build.
+- README gained a note that DeepSeek V4 Flash/Pro are half price outside peak
+  hours (01:00–04:00 and 06:00–10:00 UTC), which for UTC+8 lands squarely on
+  the working day.
+- README gained an explicit free-tier retention note: free models may use
+  submitted data to improve the model, unlike the rest of Zen.
+
+## 1.4.0
+
+**Safe to pull.** New command, prompt update — no agent or permission
+changes. `ask` already had `read: "*": "allow"`, so nothing needed unlocking;
+the gap was that its prompt never told it to look at the handoff record.
+
+- `ask`'s prompt now explicitly covers status questions — "what's been done
+  on E1", "summarize the last few reports" — and is told to actually read
+  `3-report/`, `2-spec/`, and `.opencode/workitems/` rather than answer from
+  whatever's already in context.
+- Added a hard line: **`ask` summarizes the record, it never becomes the
+  record.** A status answer exists for that conversation only. If it should
+  persist, the prompt now redirects to `/handoff` — real reports are written
+  by `build`, not improvised in a Q&A reply. Without this, a convenient
+  status summary could quietly become a second, informal decision record
+  that contradicts or duplicates the real one.
+- Added `/status [scope]`, bound to `ask`. Reads recent files across all
+  three handoff stages and reports where each stem actually got to —
+  distinguishing `complete` from `partial`/`stopped`, and flagging anything
+  planned or specced but never reported as built, rather than rounding
+  everything mentioned up to "done".
+
 ## 1.3.1
 
 **Safe to pull.** Bug fix in the ingester — no agent, permission, or template
