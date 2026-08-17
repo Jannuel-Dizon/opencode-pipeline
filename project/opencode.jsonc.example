@@ -2,15 +2,15 @@
   "$schema": "https://opencode.ai/config.json",
 
   // PROJECT LAYER — facts, not process. Copy to .opencode/opencode.json.
-  // If this file defines agents at all, it must define ALL of them. Do
+  // If this file defines agents at all, it must define ALL SEVEN:
+  // design, arch, build, build-hard, build-critical, explore, ask. Do
   // not rely on partial inheritance from global — one agent name with two
-  // definitions is how you end up unsure which one ran.
-  // Pipeline version: 1.6.0
-  "default_agent": "plan",
+  // definitions is how you end up unsure which one ran. In particular, do
+  // not name the stage-1 agent `plan`; that name is reserved by OpenCode.  "default_agent": "design",
   "subagent_depth": 1,
 
   "agent": {
-    "plan": {
+    "design": {
       "mode": "primary",
       "description": "Stage 1. Designs a slice with you. Reads project shape, never implementation bodies.",
       "model": "opencode/deepseek-v4-flash",

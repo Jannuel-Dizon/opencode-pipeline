@@ -96,12 +96,21 @@ same idea, aimed specifically at the handoff record and the work item index.
 | Agent | Stage | Default model | Can it edit source? |
 |---|---|---|---|
 | `plan` | 1 | DeepSeek V4 Flash **(free)** | No — only `handoff/1-plan/` |
+| `design` | 1 | DeepSeek V4 Flash **(free)** | No — only `handoff/1-plan/` |
 | `arch` | 2 | DeepSeek V4 Flash | No — only `handoff/2-spec/` |
 | `build` | 3 · T1 | DeepSeek V4 Flash **(free)** | Yes, on approval |
 | `build-hard` | 3 · T2 | DeepSeek V4 Flash | Yes, on approval |
 | `build-critical` | 3 · T3 | Claude Opus 5 | Yes, per-edit approval |
 | `explore` | subagent | DeepSeek V4 Flash | No — read-only |
 | `ask` | outside the pipeline | DeepSeek V4 Flash **(free)** | No — read-only |
+
+**Why the stage-1 agent is called `design`, not `plan`.** `plan` is a
+reserved agent name in OpenCode and carries a built-in read-only mode
+that overrides an agent's own `permission` block. An agent named `plan`
+therefore cannot write its own plan document — the one write the stage
+exists to perform. The agent is `design`; the stage is still "plan," the
+command is still `/plan`, and documents still stamp `Stage: plan`. Only
+the agent key differs.
 
 `build-critical` is deliberately the one agent that stays on a frontier model.
 It is also the rarest and the narrowest — a binding file list, per-edit
@@ -122,10 +131,10 @@ project's `opencode.jsonc` and it stops inheriting the global default.
 Tab switches between primary agents. Models are OpenCode Zen ids; swap them for
 any provider by editing the `model` field.
 
-**On the free-tier defaults (`plan`, `build`, `ask`):** OpenCode Zen's free
+**On the free-tier defaults (`design`, `build`, `ask`):** OpenCode Zen's free
 models carry a data-retention caveat the paid tier doesn't — submitted content
 may be used to improve the model. These three roles default there because
-each is either structurally blind to your source (`plan` cannot read
+each is either structurally blind to your source (`design` cannot read
 implementation bodies at all), read-only and low-stakes (`ask`), or bounded
 by an already-verified spec (`build`, T1). `arch`, `build-hard`, and `explore`
 deliberately do **not** default to the free tier, because they do handle real

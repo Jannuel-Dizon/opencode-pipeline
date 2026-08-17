@@ -41,22 +41,39 @@ access. That combination is where budgets die.
   into your own context only when you need to read it closely.
 - Prefer `rg` and `cargo tree`-style targeted queries over opening whole files.
 
-## Minimum verification effort
+## Verification effort
 
-Before writing the spec, issue at least three separate `explore` queries.
-Not one broad question — three narrow ones, each about something you would
-otherwise assume. `explore` costs a fraction of a cent; a wrong assumption
-costs a build session.
+Resolve every ⚠ in the plan. How you resolve each one is your judgment,
+but the standard is fixed: a claim is resolved when you have *seen* the
+thing, not when it seems plausible.
 
-Then, before you write §4, write out for yourself:
+Choose the cheapest route that actually answers the question:
+
+- **Read it yourself** when you know the file and need a few specific
+  lines. A targeted `read` or `rg` beats delegating.
+- **Delegate to `explore`** when finding the answer means searching —
+  you don't know where it lives, or it's spread across several files.
+  That is what `explore` is for, and its reading is billed once, cheaply.
+- **Say "not verified"** when neither works. An honest ⚠ carried forward
+  is correct; a confident guess is not.
+
+There is no minimum number of delegated queries. Three shallow lookups
+prove nothing; one well-aimed read can settle an assumption outright.
+
+**If `explore` returns nothing useful, do not re-run the same question.**
+Read the likely file directly, or record the claim as unresolved and move
+on. Note that `glob` does not reliably match paths under dot-directories
+such as `.opencode/` — use `read` on the directory path to list it.
+
+Before writing §4, write out for yourself:
 
 1. Every claim in this spec I have not personally read in the source.
 2. Every file the plan does *not* mention that could still break.
 3. One thing nobody asked about that could stop the build.
 
-Go check them. Item 3 is not optional and "nothing" is a valid answer only
-after you have looked — the highest-value finding in a spec is routinely
-the one the plan never raised.
+Go check them. Item 3 is not optional, and "nothing" is a valid answer
+only after you have looked — the highest-value finding in a spec is
+routinely the one the plan never raised.
 
 ## Tiering
 
@@ -107,3 +124,9 @@ Otherwise `Status: ready`.
 Write the spec to `.opencode/handoff/2-spec/<same-stem>.spec.md`, print its
 absolute path, print its full contents, and stop. Tell the human which build
 agent the tier requires. Do not build.
+
+If this session produced more than one spec, print them **one per turn** —
+write all files first, then print the first spec in full and stop; print
+the next when asked. Never substitute a summary for the contents. Rule 1's
+print *is* the human's only checkpoint; a spec that was written but never
+printed has not been handed off.

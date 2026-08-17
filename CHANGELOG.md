@@ -5,6 +5,43 @@ process — prompts, commands, templates) or needs a manual look at each
 project's filled `opencode.jsonc` / `AGENTS.md` (structural — new agents,
 changed defaults, changed permission shape).
 
+## 1.6.3
+
+**Manual step required** if your project defines its own `agent` block:
+the stage-1 agent is renamed and `default_agent` changes with it.
+
+- **Stage-1 agent renamed `plan` → `design`.** `plan` is reserved by
+  OpenCode and carries a built-in read-only mode that overrides an agent's
+  own `permission` block, so an agent named `plan` could not write to
+  `.opencode/handoff/1-plan/**` even though its config explicitly allowed
+  that path — the one write the stage exists to perform. Observed live: a
+  planning session had to hand three finished plan documents back through
+  chat for the human to paste in by hand. The `/plan` command, the `Stage:
+  plan` header value, and the `plan` status values are all unchanged; only
+  the agent key moved.
+- **`arch`: the "at least three `explore` queries" floor is gone.**
+  Replaced with a judgment standard — resolve every ⚠ by the cheapest
+  route that actually answers it, and record "not verified" when neither
+  a read nor a delegation does. The fixed count was forcing full re-runs
+  whenever a delegated query stalled.
+- **`arch`: multiple specs print one per turn.** A three-spec session hit
+  the response-length limit and printed none of them, which silently
+  removed Rule 1's checkpoint — three `ready` specs, one T3, reached disk
+  unread.
+- **`explore`: 8-call budget, no repeated searches, no narration.** One
+  lookup emitted the same "let me search more broadly" sentence several
+  hundred times and returned nothing; the target was under `.opencode/`,
+  which `glob` does not reliably match. The prompt now says to `read` the
+  directory path instead.
+- **New Rule 4a — T3 triggers a narrowing pass.** A T3 assignment now
+  requires re-checking whether the whole slice is critical or only part of
+  it, and splitting until the T3 portion passes a one-sentence test, a
+  readable-diff test, and a nothing-incidental test. Narrowing keeps every
+  floor concern in T3; routing around the floor does not — the spec must
+  state which it did. Motivating case: a `build-critical` pass on Claude
+  Opus 5 cost $3.19 and produced no code, because the slice bundled a
+  1100-line firmware port around one genuinely critical marker format.
+
 ## 1.6.2
 
 **Safe to pull.** Prompt, command, and template changes only — no agent,

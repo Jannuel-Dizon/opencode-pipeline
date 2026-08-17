@@ -1,6 +1,6 @@
 ---
 description: Stage 1 — design a slice with the planning agent
-agent: plan
+agent: design
 ---
 
 <summary>

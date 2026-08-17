@@ -16,6 +16,13 @@ does not relax anything below.
   /build  →  handoff/3-report/<stem>.report.md  what actually happened
 ```
 
+**Stage names and agent names are not the same thing.** The stages are
+`plan`, `spec`, and `report` — that is what documents stamp in their
+`Stage:` header and what `Status:` values are scoped to. The *agent* that
+runs stage 1 is named `design`, because `plan` is reserved by OpenCode and
+carries a built-in read-only mode that would prevent the stage from
+writing its own document. The `/plan` command is unchanged.
+
 There is also `ask` — a casual Q&A agent that sits **outside** this pipeline
 entirely. It writes no document, follows no template, and is not bound by any
 rule in this file below this point. Use `/ask` or Tab to it for a question
@@ -88,6 +95,39 @@ persistent storage in a way that cannot be undone, and anything handling money.
 
 A build agent that receives a spec whose tier does not match its own tier must
 refuse and tell the human which agent to switch to.
+
+## Rule 4a — T3 triggers a narrowing pass
+
+When the architect assigns T3, that is not the end of the analysis — it
+is the trigger for one more.
+
+Before writing the spec, ask: **is every part of this slice T3, or only
+part of it?** If only part, propose a split where the T3 concern is its
+own slice with its own spec, and the remainder drops to its true tier.
+Repeat until the T3 slice passes all three narrowness tests:
+
+1. **One sentence.** Its purpose fits in one sentence with no "and". If
+   it needs an "and", split again.
+2. **Readable diff.** Its file list is short enough that a human looking
+   for a mistake can read every changed line. If it is not, split again.
+3. **Nothing incidental.** Every file is on the list *because* of the
+   floor concern. Scaffolding, wiring, docs, and dependencies that merely
+   accompany the critical change belong in a sibling slice.
+
+This is the opposite of routing around the floor, and the distinction
+must be stated in the spec: **routing around the floor moves a critical
+concern out of T3. Narrowing keeps every critical concern in T3 and moves
+everything else out.** After a split, if any floor concern has escaped
+T3, the split is wrong — redo it.
+
+If a T3 slice cannot be narrowed further and still fails the one-sentence
+test, that is a `replan`, not a spec.
+
+**When the floor fires on something it plausibly wasn't written for** —
+a committed non-production test fixture, say — the architect still
+assigns T3 and still builds at T3. It names the mismatch in the spec so
+the human can decide whether to amend the floor. The architect never
+amends the floor itself.
 
 ## Rule 5 — Cross-boundary contracts are named, never decided
 
