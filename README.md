@@ -4,7 +4,7 @@ A three-stage development pipeline for OpenCode: **plan → architecture →
 build**, with a markdown document at every seam and a hard stop between stages.
 Plus `ask`, a fourth agent that sits outside the pipeline for quick questions.
 
-Version **1.5.1**.
+Version **1.6.0**.
 
 ## What it is for
 
@@ -95,8 +95,8 @@ same idea, aimed specifically at the handoff record and the work item index.
 
 | Agent | Stage | Default model | Can it edit source? |
 |---|---|---|---|
-| `plan` | 1 | DeepSeek V4 Flash | No — only `handoff/1-plan/` |
-| `arch` | 2 | DeepSeek V4 Pro | No — only `handoff/2-spec/` |
+| `plan` | 1 | DeepSeek V4 Flash **(free)** | No — only `handoff/1-plan/` |
+| `arch` | 2 | DeepSeek V4 Flash | No — only `handoff/2-spec/` |
 | `build` | 3 · T1 | DeepSeek V4 Flash **(free)** | Yes, on approval |
 | `build-hard` | 3 · T2 | DeepSeek V4 Flash | Yes, on approval |
 | `build-critical` | 3 · T3 | Claude Opus 5 | Yes, per-edit approval |
@@ -109,17 +109,29 @@ approval, so its context stays small and it contributes very little to the
 bill. Downgrading it saves cents per slice and spends them on the one tier
 where a wrong answer is a bricked device rather than a failed build.
 
+**As of 1.6.0, `arch` runs on DeepSeek V4 Flash rather than V4 Pro.** DeepSeek's
+officially retrained Flash (July 31, 2026) now matches or beats Pro-Preview on
+the agent benchmarks DeepSeek publishes, at roughly a third of the price —
+see the 1.6.0 entry in `CHANGELOG.md` for the numbers and the caveats on how
+much to trust them. This is the pipeline's own team consolidating on one
+vendor for cost reasons rather than a verified quality upgrade; if you run
+`arch` on real slices and its specs start missing things V4 Pro used to catch,
+that is useful signal — pin `arch` back to `opencode/deepseek-v4-pro` in your
+project's `opencode.jsonc` and it stops inheriting the global default.
+
 Tab switches between primary agents. Models are OpenCode Zen ids; swap them for
 any provider by editing the `model` field.
 
-**On `ask` defaulting to the free tier:** OpenCode Zen's free models carry a
-data-retention caveat the paid tier doesn't — submitted content may be used to
-improve the model. `ask` defaults there because it's read-only, low-stakes,
-and produces no artifact. `build` deliberately does **not** default to the
-free tier for the same reason in reverse: it edits real files in a real repo,
-and on proprietary code the zero-retention guarantee of the paid tier is
-usually worth the extra fraction of a cent per slice. Decide this per project,
-not by leaving the default unexamined.
+**On the free-tier defaults (`plan`, `build`, `ask`):** OpenCode Zen's free
+models carry a data-retention caveat the paid tier doesn't — submitted content
+may be used to improve the model. These three roles default there because
+each is either structurally blind to your source (`plan` cannot read
+implementation bodies at all), read-only and low-stakes (`ask`), or bounded
+by an already-verified spec (`build`, T1). `arch`, `build-hard`, and `explore`
+deliberately do **not** default to the free tier, because they do handle real
+source, and on proprietary code the zero-retention guarantee of the paid tier
+is usually worth the extra fraction of a cent per slice. Decide this per
+project, not by leaving the default unexamined.
 
 ## Two design choices worth understanding
 
@@ -194,15 +206,18 @@ version produced it.
 
 Cost is context size × turns, not how often you invoke an agent. The planner is
 the most-used stage and among the cheapest, because it never loads source. The
-architect is the expensive one because it does.
+architect used to be the expensive one because it reads the whole codebase —
+as of 1.6.0 it's on the same cheap Flash tier as everything else except
+`build-critical`, so the biggest remaining cost lever is elsewhere now.
 
 The levers, in order of effect:
 
-0. **Pick the tier down.** The single biggest lever, and the one applied in
-   the defaults above: `arch` on a frontier model reading a whole codebase is
-   where most of a slice's cost lands. Moving it to a strong mid-tier model
-   typically cuts a full plan→arch→build pass by several times over.
-
+0. **Pick the tier down.** Still the biggest lever if you're pinning your own
+   models: `arch` on a frontier model reading a whole codebase is where most
+   of a slice's cost used to land before 1.6.0. If you've overridden `arch`
+   back to a frontier model in your project config, moving it to a strong
+   mid-tier model typically cuts a full plan→arch→build pass by several
+   times over — that was the whole rationale for the 1.5.0 and 1.6.0 defaults.
 
 1. **Scope the architect.** Give it a slice and a file list, not "look at the
    repo".
@@ -221,7 +236,10 @@ Peak is 01:00–04:00 and 06:00–10:00 UTC. Convert that to your own timezone
 before assuming it doesn't matter — for UTC+8, peak lands on roughly
 09:00–12:00 and 14:00–18:00 local, which is precisely the working day. A long
 architecture session moved to late afternoon or evening costs half what the
-same session costs mid-morning.
+same session costs mid-morning. This matters more as of 1.6.0 than it did
+before — `arch` is now one of the two DeepSeek-billed stages (alongside
+`build-hard`) instead of running on a flat-rate frontier model, so its cost
+actually responds to when you run it.
 
 ### On free-tier models
 
@@ -235,6 +253,14 @@ work on proprietary code it means your source is leaving the zero-retention
 boundary for a saving of a fraction of a cent per slice — worth deciding
 deliberately rather than inheriting. Switching `build` to the paid
 `opencode/deepseek-v4-flash` is a one-line change.
+
+Other Zen free-tier models exist beyond DeepSeek's (Laguna S 2.1, Nemotron 3
+Ultra, MiMo-V2.5, Hy3, and the unidentified "Big Pickle") and some — Laguna S
+2.1 in particular — publish benchmark claims competitive with DeepSeek V4
+Flash on coding-specific suites. None of them have been run against real
+slices in this pipeline as of 1.6.0. If you evaluate one, do it the same way
+1.5.0's retiering was decided: measure a real plan→arch→build pass, don't
+retier off a vendor chart alone.
 
 ## Files
 

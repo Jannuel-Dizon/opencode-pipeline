@@ -5,6 +5,55 @@ process — prompts, commands, templates) or needs a manual look at each
 project's filled `opencode.jsonc` / `AGENTS.md` (structural — new agents,
 changed defaults, changed permission shape).
 
+## 1.6.0
+
+**Manual step required** if your project pins its own models: this changes
+a default model assignment. Projects with an `agent` block in their own
+`opencode.jsonc` keep whatever they already pin — update those by hand.
+
+- **`arch` moves from DeepSeek V4 Pro to DeepSeek V4 Flash.** This is a
+  retiering decision, not a benchmark chase: DeepSeek's officially retrained
+  V4-Flash (shipped July 31, 2026) now matches or beats V4-Pro-Preview on
+  every agent benchmark DeepSeek publishes — Terminal-Bench 2.1 82.7 vs 72.1,
+  DeepSWE 54.4 vs 7.3 — while costing roughly a third as much. `arch` was
+  already identified in 1.5.0 as the single largest cost driver in a
+  plan→arch→build pass, so this is the same lever pulled one step further.
+- **Caveat, stated plainly because it matters for a decision this size:**
+  the DeepSeek numbers above are vendor-self-reported under DeepSeek's own
+  harness, which was not independently reproducible at time of writing.
+  Separately, an independent re-run on the contamination-resistant DeepSWE
+  benchmark put V4-Pro's pass@1 at 8%, far below its 80.6% vendor-reported
+  SWE-bench Verified score — a reminder that the whole V4 family's published
+  numbers deserve real skepticism, not just Pro's. This move is a deliberate
+  bet that Flash's own trajectory (cheaper, and no longer behind Pro on
+  DeepSeek's own suite) is worth taking, not a claim that arch's output
+  quality has been independently verified against the old default. Treat the
+  first several `arch` sessions after upgrading the way any tier change
+  should be treated — read the specs it produces closely, the way Rule 1
+  (stop and print) already asks you to.
+- `explore` and `build-hard` stay on DeepSeek V4 Flash — unchanged, already
+  the cheapest paid tier that clears the bar for those roles.
+- `ask`, `plan`, and `build` stay on DeepSeek V4 Flash Free — unchanged.
+  These roles either can't see implementation code (`plan`) or are read-only
+  / mechanical by design, so the free tier's data-retention caveat and lower
+  ceiling aren't costing anything real here.
+- `build-critical` stays on Claude Opus 5 — unchanged, and not up for
+  retiering on cost grounds. It's the rarest, narrowest agent by design, so
+  it contributes little to the bill regardless of model, on the one tier
+  where a wrong answer is a bricked device or a security hole rather than a
+  failed build.
+- **Considered and deliberately not adopted this round:** several other Zen
+  models surfaced as candidates — Poolside's Laguna S 2.1 (free tier;
+  vendor claims Terminal-Bench 2.1 and SWE-Bench Pro parity with DeepSeek V4
+  Flash at a fraction of the parameter count) and NVIDIA's Nemotron 3 Ultra
+  (free tier; published architecture paper, not just a launch blog) both
+  looked promising enough to name here. Neither has been run against real
+  slices in this pipeline yet. The project decision for this release is to
+  consolidate on DeepSeek across the pipeline rather than diversify vendors
+  further; revisit Laguna/Nemotron for `arch` and `build-hard` in a future
+  release once they've been benchmarked against actual specs and reports,
+  not just vendor tables.
+
 ## 1.5.1
 
 **Safe to pull.** Prompt-only fix — no agent, permission, or model changes.
