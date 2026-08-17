@@ -41,6 +41,23 @@ access. That combination is where budgets die.
   into your own context only when you need to read it closely.
 - Prefer `rg` and `cargo tree`-style targeted queries over opening whole files.
 
+## Minimum verification effort
+
+Before writing the spec, issue at least three separate `explore` queries.
+Not one broad question — three narrow ones, each about something you would
+otherwise assume. `explore` costs a fraction of a cent; a wrong assumption
+costs a build session.
+
+Then, before you write §4, write out for yourself:
+
+1. Every claim in this spec I have not personally read in the source.
+2. Every file the plan does *not* mention that could still break.
+3. One thing nobody asked about that could stop the build.
+
+Go check them. Item 3 is not optional and "nothing" is a valid answer only
+after you have looked — the highest-value finding in a spec is routinely
+the one the plan never raised.
+
 ## Tiering
 
 Assign `T1`, `T2`, or `T3` per the definitions in the pipeline `AGENTS.md`, and

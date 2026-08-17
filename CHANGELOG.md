@@ -5,6 +5,28 @@ process — prompts, commands, templates) or needs a manual look at each
 project's filled `opencode.jsonc` / `AGENTS.md` (structural — new agents,
 changed defaults, changed permission shape).
 
+## 1.6.2
+
+**Safe to pull.** Prompt, command, and template changes only — no agent,
+model, or permission changes.
+
+Follows a real before/after measurement of two comparable slices
+(2026-08-17 facade core/verify at $3.48, facade hal/envelope at $0.22),
+per the framework's own "measure it on real tasks" requirement.
+
+- `Model:` is now injected from config rather than self-reported. The
+  core/verify report stamped `claude-sonnet-5`; billing shows the build ran
+  entirely on `deepseek-v4-pro`. Self-report is not evidence.
+- `plan` prompt: ⚠ is the stage's only marker. The cheap planner asserted
+  nine of ten assumptions as `[read]` fact, one of which was wrong and
+  self-contradicting, leaving `arch` no prioritised work list.
+- `arch` prompt: minimum of three `explore` queries and an explicit
+  unverified-claims pass before writing. The frontier arch's visible
+  advantage was turn count (9 vs 5), which is buyable at current prices.
+- No retiering. `build-hard` on Flash did the same work as Pro — 50 vs 41
+  calls, 5.3M vs 4.5M cumulative input — at a tenth the cost, with no
+  quality drop detectable in the reports.
+
 ## 1.6.1
 
 Changed the arch agent from deepseek v4 flash to gpt 5.6 luna

@@ -30,9 +30,13 @@ The load-bearing content is:
 - **Why this shape** — the alternatives considered and why they lost. This is
   what lets the architect recognise a constraint that has become invalid,
   rather than blindly implementing an instruction that no longer makes sense.
-- **Assumptions** — every claim you are making about the codebase that you did
-  not verify. Mark each ⚠. Be generous here; an assumption you surface is
-  cheap, an assumption you bury costs a build session.
+- **Assumptions** — every claim you make about the codebase. Mark each ⚠.
+  ⚠ is the only epistemic marker this stage uses. `[read]` and `[ran]`
+  belong to the architecture stage, which verifies; you do not. Citing a
+  line number does not downgrade a claim from ⚠ — you may have read a
+  stale file, mis-scoped the grep, or been given the line by `explore`.
+  Nine assumptions asserted as fact give the architect no work list; that
+  list is the main thing this document is for..
 - **Open questions** — anything you and the human could not settle.
 
 You do **not** produce a list of things for the architect to grep. Retrieval

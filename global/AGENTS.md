@@ -117,6 +117,13 @@ once at a low rate rather than repeatedly at yours.
 This matters most for `arch` and `build-critical`, which run on expensive
 models. Curate what you look at.
 
+Do not leave a session idle mid-stage. Prompt caches expire; resuming after
+a long gap re-bills the whole accumulated context cold. A measured build
+session paid $0.24 for a single call after a 22-minute pause — more than a
+whole later slice cost end to end. If you need to ask something unrelated,
+finish the stage first, or open `ask` in a separate session rather than
+Tabbing out of a live one.
+
 ---
 
 ## Document headers
@@ -140,3 +147,7 @@ Status values, per stage:
 
 `Status` is how the pipeline routes. A spec marked `replan` is an input to the
 planning stage, not a build instruction.
+
+`Model` is copied verbatim from the value injected by the command. Do not
+write what you believe you are — a model's self-report is not evidence, and
+this field is the only one in the header that nothing downstream can check.

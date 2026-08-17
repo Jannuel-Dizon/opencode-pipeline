@@ -32,6 +32,9 @@ Files changed in the working tree:
 Diff summary:
 !`git diff --stat`
 
+Model actually configured for this agent:
+!`grep -A4 '"<agent>"[[:space:]]*:' ${OPENCODE_CONFIG:-~/.config/opencode/opencode.json} | grep '"model"' | head -1`
+
 Cross-check that list against your own account of what you edited. If they
 disagree, the git output is right and your memory is wrong — say so in the
 report.

@@ -23,5 +23,8 @@ Recent reports (context for what already exists):
 Open items from the last report:
 !`ls -t .opencode/handoff/3-report/*.md 2>/dev/null | head -1 | xargs -r sed -n '/## 7. Still open/,/## 8./p'`
 
+Model actually configured for this agent:
+!`grep -A4 '"<agent>"[[:space:]]*:' ${OPENCODE_CONFIG:-~/.config/opencode/opencode.json} | grep '"model"' | head -1`
+
 Start by discussing the slice with me. Do not write the document until I say
 the plan is settled.

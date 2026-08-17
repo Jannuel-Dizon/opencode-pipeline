@@ -241,6 +241,10 @@ before — `arch` is now one of the two DeepSeek-billed stages (alongside
 `build-hard`) instead of running on a flat-rate frontier model, so its cost
 actually responds to when you run it.
 
+The $0.22 figure was measured during DeepSeek's *peak* window (08:27–09:17
+UTC); the $3.50 baseline's build stage ran off-peak at half price. The
+like-for-like gap is therefore wider than 15×, not narrower.
+
 ### On free-tier models
 
 Zen's free models — including DeepSeek V4 Flash Free — carry a data-retention

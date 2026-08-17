@@ -22,5 +22,8 @@ Available plans, if the stem above is wrong:
 Follow `.opencode/handoff/SPEC_TEMPLATE.md`. Write to
 `.opencode/handoff/2-spec/$ARGUMENTS.spec.md`.
 
+Model actually configured for this agent:
+!`grep -A4 '"<agent>"[[:space:]]*:' ${OPENCODE_CONFIG:-~/.config/opencode/opencode.json} | grep '"model"' | head -1`
+
 Delegate exploratory searching to the `explore` subagent. Read files into your
 own context only when you need to read them closely.
