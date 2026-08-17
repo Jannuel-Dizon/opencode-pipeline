@@ -48,12 +48,12 @@ cd ~/dev/opencode-pipeline
 # 3. Project layer, once per repo
 cd /path/to/your/repo
 mkdir -p .opencode
-cp ~/dev/opencode-pipeline/project/AGENTS.md.example .opencode/AGENTS.md
+cp ./project/AGENTS.md.example path/to/your/repo/.opencode/AGENTS.md
 # optional — only if this repo needs different models or tighter permissions:
-cp ~/dev/opencode-pipeline/project/opencode.jsonc.example .opencode/opencode.jsonc
+cp ./project/opencode.jsonc.example path/to/this/repo/.opencode/opencode.jsonc
 
 # then, from that same clone:
-~/dev/opencode-pipeline/scripts/link-project.sh /path/to/your/repo
+./scripts/link-project.sh /path/to/your/repo
 # Symlinks just the three handoff templates — pure process, safe to
 # auto-update. Leaves opencode.jsonc and AGENTS.md as real files, since
 # those hold this project's actual facts.
