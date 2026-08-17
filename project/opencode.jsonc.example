@@ -43,7 +43,8 @@
       // on the agent benchmarks DeepSeek publishes, at roughly a third of the price.
       // If you pinned deepseek-v4-pro here yourself, that's a deliberate override and
       // this comment doesn't change it — just flagging why the shipped default moved.
-      "model": "opencode/deepseek-v4-flash",
+      // Moved to gtp-5.6-luna from deepseek-v4-flash in 1.6.1
+      "model": "opencode/gpt-5.6-luna",
       "temperature": 0.2,
       "prompt": "{file:~/.config/opencode/prompts/arch.md}",
       "permission": {

@@ -5,6 +5,10 @@ process — prompts, commands, templates) or needs a manual look at each
 project's filled `opencode.jsonc` / `AGENTS.md` (structural — new agents,
 changed defaults, changed permission shape).
 
+## 1.6.1
+
+Changed the arch agent from deepseek v4 flash to gpt 5.6 luna
+
 ## 1.6.0
 
 **Manual step required** if your project pins its own models: this changes
