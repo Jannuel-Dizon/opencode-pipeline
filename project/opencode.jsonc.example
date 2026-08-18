@@ -6,7 +6,8 @@
   // design, arch, build, build-hard, build-critical, explore, ask. Do
   // not rely on partial inheritance from global — one agent name with two
   // definitions is how you end up unsure which one ran. In particular, do
-  // not name the stage-1 agent `plan`; that name is reserved by OpenCode.  "default_agent": "design",
+  // not name the stage-1 agent `plan`; that name is reserved by OpenCode.
+  "default_agent": "design",
   "subagent_depth": 1,
 
   "agent": {
@@ -28,6 +29,7 @@
           "*.env.*": "deny"
         },
         "edit": { "*": "deny", ".opencode/handoff/1-plan/**": "allow" },
+        "write": { "*": "deny", ".opencode/handoff/1-plan/**": "allow" },
         "grep": "deny",
         "glob": "allow",
         "bash": "deny",
@@ -38,18 +40,13 @@
     "arch": {
       "mode": "primary",
       "description": "Stage 2. Verifies a plan against the codebase, assigns a tier, writes a spec.",
-      // Was deepseek-v4-pro through pipeline 1.5.x. Moved to deepseek-v4-flash in
-      // 1.6.0 — DeepSeek's official retrained Flash now matches or beats Pro-Preview
-      // on the agent benchmarks DeepSeek publishes, at roughly a third of the price.
-      // If you pinned deepseek-v4-pro here yourself, that's a deliberate override and
-      // this comment doesn't change it — just flagging why the shipped default moved.
-      // Moved to gtp-5.6-luna from deepseek-v4-flash in 1.6.1
       "model": "opencode/gpt-5.6-luna",
       "temperature": 0.2,
       "prompt": "{file:~/.config/opencode/prompts/arch.md}",
       "permission": {
         "read": { "*": "allow", "*.env": "deny", "*.env.*": "deny" },
         "edit": { "*": "deny", ".opencode/handoff/2-spec/**": "allow" },
+        "write": { "*": "deny", ".opencode/handoff/2-spec/**": "allow" },
         "bash": {
           "*": "ask",
           "ls*": "allow",
@@ -79,6 +76,12 @@
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
+        "write": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
         "bash": {
           "*": "ask",
           "<CHECK_COMMAND e.g. ./Check.sh*>": "allow",
@@ -101,6 +104,12 @@
       "prompt": "{file:~/.config/opencode/prompts/build-hard.md}",
       "permission": {
         "edit": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
+        "write": {
           "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
@@ -134,6 +143,12 @@
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
+        "write": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
         "bash": {
           "*": "ask",
           "<CHECK_COMMAND>": "allow",
@@ -158,6 +173,7 @@
         "grep": "allow",
         "glob": "allow",
         "edit": "deny",
+        "write": "deny",
         "bash": "deny",
         "webfetch": "deny",
         "task": "deny"
@@ -173,6 +189,7 @@
       "permission": {
         "read": { "*": "allow", "*.env": "deny", "*.env.*": "deny" },
         "edit": "deny",
+        "write": "deny",
         "grep": "allow",
         "glob": "allow",
         "bash": {

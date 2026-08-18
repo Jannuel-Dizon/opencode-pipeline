@@ -65,6 +65,10 @@
           "*": "deny",
           ".opencode/handoff/1-plan/**": "allow"
         },
+        "write": {
+          "*": "deny",
+          ".opencode/handoff/1-plan/**": "allow"
+        },
         "grep": "deny",
         "glob": "allow",
         "bash": "deny",
@@ -87,6 +91,10 @@
           "*.env.*": "deny"
         },
         "edit": {
+          "*": "deny",
+          ".opencode/handoff/2-spec/**": "allow"
+        },
+        "write": {
           "*": "deny",
           ".opencode/handoff/2-spec/**": "allow"
         },
@@ -130,6 +138,12 @@
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
+        "write": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
         "bash": {
           "*": "ask",
           "ls*": "allow",
@@ -161,6 +175,12 @@
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
+        "write": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
         "bash": {
           "*": "ask",
           "ls*": "allow",
@@ -187,6 +207,12 @@
       "prompt": "{file:./prompts/build-critical.md}",
       "permission": {
         "edit": {
+          "*": "ask",
+          ".opencode/handoff/1-plan/**": "deny",
+          ".opencode/handoff/2-spec/**": "deny",
+          ".opencode/handoff/3-report/**": "allow"
+        },
+        "write": {
           "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
@@ -225,6 +251,7 @@
         "grep": "allow",
         "glob": "allow",
         "edit": "deny",
+        "write": "deny",
         "bash": "deny",
         "webfetch": "deny",
         "task": "deny"
@@ -243,6 +270,7 @@
           "*.env.*": "deny"
         },
         "edit": "deny",
+        "write": "deny",
         "grep": "allow",
         "glob": "allow",
         "bash": {
@@ -251,7 +279,6 @@
           "cat *": "allow",
           "rg *": "allow",
           "git status*": "allow",
-          "git log*": "allow",
           "git diff*": "allow",
           "rm *": "deny",
           "git commit*": "deny",
