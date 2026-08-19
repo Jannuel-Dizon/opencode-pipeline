@@ -5,6 +5,35 @@ process — prompts, commands, templates) or needs a manual look at each
 project's filled `opencode.jsonc` / `AGENTS.md` (structural — new agents,
 changed defaults, changed permission shape).
 
+## 1.6.5
+
+**Safe to pull.** Script-only — no agent, permission, or template changes.
+
+- **`scripts/ingest-workitems.py` now sorts finished tickets into
+  `items/done/`.** Any item whose `status` matches a done value (default:
+  `done`, `complete`, `completed`, `closed`, case-insensitive; extend with
+  repeatable `--done-status`) is written to `items/done/<ID>.md` instead of
+  `items/<ID>.md`, and dropped from `WORKITEMS.md`'s main table in favour of
+  a one-line count. Rerunning the script moves a ticket between the two
+  locations automatically as its tracked status changes — nothing is ever
+  set locally. This is a read-side split only: the tracker (AppFlowy /
+  sheet / HTML) stays the sole place status is written, consistent with the
+  "materialise, don't let agents fetch or mutate live" principle the
+  ingester was already built on.
+- **Considered and deliberately not built:** teaching `/status` or `/tickets`
+  to move files themselves. Both are bound to `ask`, which has `write` and
+  `edit` denied on purpose — the 1.4.0 rule that "`ask` summarizes the
+  record, it never becomes the record" would break the moment a Q&A agent
+  gained a filesystem side effect. Sorting on status belongs in the
+  ingester, which already reads that column and already regenerates the
+  tree wholesale on every run.
+- The existing stale-file safety check (1.3.1: refuse to prune ≥5 items /
+  ≥40% of the total without `--force-prune`) now scans `items/` and
+  `items/done/` together, so it can't be fooled by files that moved between
+  the two rather than actually leaving the source.
+- `--dry-run` output now flags done items inline (`[done]`) rather than
+  only being visible after a real write.
+
 ## 1.6.3
 
 **Manual step required** if your project defines its own `agent` block:
