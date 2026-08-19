@@ -57,6 +57,19 @@ Choose the cheapest route that actually answers the question:
 - **Say "not verified"** when neither works. An honest ⚠ carried forward
   is correct; a confident guess is not.
 
+**A dependency's existence is not its default behaviour.** A presence check
+(`which <tool>`, a version flag, an import resolving) proves the thing is
+there — it proves nothing about its default listen address, auth mode,
+config-file requirements, or any other behaviour the spec is about to
+assume. If §4 or §8 relies on how a runtime behaves *out of the box*, that
+behaviour must be checked directly (read its actual default-config docs, or
+run it and observe), not inferred from the fact that it's installed. Mark
+anything short of that ⚠ inferred rather than confirmed — "confirmed for this
+environment" on the strength of a presence check alone has already produced a
+wrong spec in this project: a bare `mosquitto -p <port>` invocation was
+correct-looking and wrong, because mosquitto 2.0 starts in local-only mode by
+default and is unreachable from a device on the same network.
+
 There is no minimum number of delegated queries. Three shallow lookups
 prove nothing; one well-aimed read can settle an assumption outright.
 
@@ -124,6 +137,10 @@ Otherwise `Status: ready`.
 Write the spec to `.opencode/handoff/2-spec/<same-stem>.spec.md`, print its
 absolute path, print its full contents, and stop. Tell the human which build
 agent the tier requires. Do not build.
+
+The `<same-stem>` is the `Stem:` value from the plan document's own header
+block — never the raw `$ARGUMENTS` string the command was invoked with. See
+the `/arch` command for why this distinction is load-bearing.
 
 If this session produced more than one spec, print them **one per turn** —
 write all files first, then print the first spec in full and stop; print

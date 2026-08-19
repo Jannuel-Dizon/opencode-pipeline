@@ -5,6 +5,50 @@ process — prompts, commands, templates) or needs a manual look at each
 project's filled `opencode.jsonc` / `AGENTS.md` (structural — new agents,
 changed defaults, changed permission shape).
 
+## 1.6.6
+
+**Safe to pull.** Prompt and command changes only — no agent, model, or
+permission-structure changes.
+
+- **`arch` command: fixed the spec-stem corruption bug.** The write target
+  was `.opencode/handoff/2-spec/$ARGUMENTS.spec.md` — a raw concatenation
+  with no fallback if the argument already carried an extension. The `@`
+  plan reference has always had a fallback list (`ls -t 1-plan/*.md`) for
+  exactly this case; the write path didn't. Observed in practice: an
+  invocation with `$ARGUMENTS = 2026-08-19-ota-test-server.plan.md`
+  produced a write target of `...plan.md.spec.md`, silently corrupting the
+  stem downstream. Fixed by deriving the write stem from the plan
+  document's own `Stem:` header once it loads, never from the raw
+  argument — the header is the one place the stem can't drift, since every
+  earlier stage stamped it there deliberately. If the argument and the
+  header disagree, `arch` now trusts the header and says so in passing
+  rather than guessing.
+- **`arch` prompt: new verification-effort item — existence is not default
+  behaviour.** A presence check (`which <tool>`, an import resolving)
+  proves a dependency is there; it proves nothing about its default listen
+  address, auth mode, or config-file requirements. `arch` had previously
+  marked "required external binaries are available — confirmed for this
+  environment" on the strength of `which mosquitto` alone, then specified a
+  bare `mosquitto -p <port>` invocation — correct-looking, wrong under
+  mosquitto 2.0's local-only default, and only caught after a full hardware
+  round trip and a device panic. The prompt now requires checking a
+  runtime's *default behaviour* directly whenever a spec depends on it, not
+  just its presence, and marking anything short of that ⚠ inferred rather
+  than confirmed.
+
+**Also observed this round, not yet promoted into the shared template:** a
+project session hit permission denials on `.opencode/handoff/2-spec/**`-style
+allows when the tool call used an absolute path, while an allow written
+against the absolute path itself succeeded. The affected project's
+`opencode.json` now carries both the relative and the absolute form for every
+handoff-directory `edit`/`write` entry as a defensive workaround. This is
+**not** promoted into `project/opencode.jsonc.example` yet — the fix as
+applied embeds one machine's literal absolute path, and the underlying
+matcher behavior isn't root-caused against OpenCode's own implementation.
+Treat it as a hypothesis worth continuing to test (verify any new path allow
+with a throwaway write before trusting it), not a confirmed pipeline-wide bug,
+until it reproduces cleanly enough to generalize into the template.
+
 ## 1.6.5
 
 **Safe to pull.** Script-only — no agent, permission, or template changes.

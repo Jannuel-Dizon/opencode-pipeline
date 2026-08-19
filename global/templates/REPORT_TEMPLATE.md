@@ -13,6 +13,10 @@ Spec:      .opencode/handoff/2-spec/<stem>.spec.md
 > A report, not a sales pitch. What went wrong is worth more to the next
 > planning session than what went right.
 
+> The `Status:` value above is authoritative. If body prose (e.g. a later
+> §8 update) changes the effective status, edit the header field to match
+> in the same edit — never leave the two disagreeing.
+
 ---
 
 ## 1. Files changed
