@@ -128,7 +128,7 @@
     "build": {
       "mode": "primary",
       "description": "Stage 3, tier T1 (routine). Implements a T1 spec. Cheap model, mechanical work only.",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "opencode/nemotron-3-ultra-free",
       "temperature": 0.1,
       "prompt": "{file:./prompts/build.md}",
       "permission": {
@@ -260,7 +260,7 @@
     "ask": {
       "mode": "primary",
       "description": "Casual Q&A, outside the pipeline. No handoff doc, no template, no tier. For quick questions not worth a planning session.",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "opencode/hy3-free",
       "temperature": 0.3,
       "prompt": "{file:./prompts/ask.md}",
       "permission": {
