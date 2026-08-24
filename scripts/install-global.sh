@@ -73,7 +73,11 @@ else
   echo "override file already exists, leaving it alone: $OVERRIDE_FILE"
 fi
 
-SHELL_RC="$HOME/.bashrc"
+case "$SHELL" in
+  */zsh) SHELL_RC="$HOME/.zshrc" ;;
+  */bash) SHELL_RC="$HOME/.bashrc" ;;
+  *) SHELL_RC="$HOME/.profile" ;;
+esac
 EXPORT_LINE="export OPENCODE_CONFIG=\"$OVERRIDE_FILE\""
 
 if ! grep -qF "OPENCODE_CONFIG=" "$SHELL_RC" 2>/dev/null; then
