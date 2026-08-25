@@ -21,13 +21,13 @@
       "rm *": "deny",
       "git push*": "deny"
     },
-    // CHANGED: external_directory now grants baseline access to outside
-    // paths (reads inherit "allow" from the top-level `read` block per
-    // OpenCode's docs). The `edit` rule below is layered on the same "*"
-    // pattern to require confirmation before any write/edit outside the
-    // workspace. NOTE: OpenCode has an open bug (GH issue #18441) where
-    // external_directory: allow can bypass this edit rule for writes —
-    // verify this actually prompts before trusting it.
+    // external_directory grants baseline access to outside paths (reads
+    // inherit "allow" from the top-level `read` block). The `edit` rule
+    // below is layered on the same "*" pattern to try to require
+    // confirmation before any write/edit outside the workspace. NOTE:
+    // OpenCode has an open upstream bug (anomalyco/opencode issue #18441)
+    // where external_directory: allow can bypass this edit rule for
+    // writes — unverified whether this actually prompts.
     "external_directory": {
       "*": "allow"
     },
@@ -91,7 +91,7 @@
     "arch": {
       "mode": "primary",
       "description": "Stage 2. Verifies a plan against the real codebase, assigns a build tier, writes a spec to handoff/2-spec/. Never edits source.",
-      "model": "opencode/deepseek-v4-flash",
+      "model": "opencode/gpt-5.6-luna",
       "temperature": 0.2,
       "prompt": "{file:./prompts/arch.md}",
       "permission": {
@@ -232,10 +232,21 @@
           "*": "ask",
           "ls*": "allow",
           "rg *": "allow",
+          "grep *": "allow",
+          "head *": "allow",
+          "tail *": "allow",
+          "wc *": "allow",
+          "echo *": "allow",
+          "cd *": "allow",
+          "cargo check*": "allow",
+          "cargo clippy*": "allow",
+          "cargo test*": "allow",
+          "./Check.sh*": "allow",
           "git status*": "allow",
           "git diff*": "allow",
-          "git log*": "allow",
           "rm *": "deny",
+          "cargo add*": "deny",
+          "cargo update*": "deny",
           "git commit*": "ask",
           "git push*": "deny",
           "git reset*": "deny"
@@ -285,12 +296,24 @@
         "glob": "allow",
         "bash": {
           "*": "ask",
-          "ls *": "allow",
+          "ls*": "allow",
           "cat *": "allow",
           "rg *": "allow",
+          "grep *": "allow",
+          "head *": "allow",
+          "tail *": "allow",
+          "wc *": "allow",
+          "echo *": "allow",
+          "cd *": "allow",
           "git status*": "allow",
+          "git log*": "allow",
           "git diff*": "allow",
+          "cargo tree*": "allow",
           "rm *": "deny",
+          "mv *": "deny",
+          "cp *": "deny",
+          "curl *": "deny",
+          "wget *": "deny",
           "git commit*": "deny",
           "git push*": "deny"
         },

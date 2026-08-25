@@ -32,6 +32,8 @@
         "write": { "*": "deny", ".opencode/handoff/1-plan/**": "allow" },
         "grep": "deny",
         "glob": "allow",
+        // bash stays fully denied here regardless — no compound-command
+        // gap possible since every piece of any command hits this deny.
         "bash": "deny",
         "task": { "*": "deny", "explore": "allow" }
       }
@@ -47,17 +49,18 @@
         "read": { "*": "allow", "*.env": "deny", "*.env.*": "deny" },
         "edit": { "*": "deny", ".opencode/handoff/2-spec/**": "allow" },
         "write": { "*": "deny", ".opencode/handoff/2-spec/**": "allow" },
+        // CHANGED: catch-all "ask" -> "allow". arch only ever needs
+        // read-only queries per its prompt; named denies below cover the
+        // actual risk (destructive git, accidental commits/pushes). If
+        // this project needs tighter arch permissions, revert the
+        // catch-all to "ask" and rebuild the allowlist explicitly.
         "bash": {
-          "*": "ask",
-          "ls*": "allow",
-          "rg *": "allow",
-          "git log*": "allow",
-          "git show*": "allow",
-          "git diff*": "allow",
-          "<READ_ONLY_BUILD_QUERY e.g. cargo tree*>": "allow",
+          "*": "allow",
           "rm *": "deny",
           "git commit*": "deny",
-          "git push*": "deny"
+          "git push*": "deny",
+          "git checkout*": "deny",
+          "git reset*": "deny"
         },
         "task": { "*": "deny", "explore": "allow" }
       }
@@ -70,24 +73,27 @@
       "temperature": 0.1,
       "prompt": "{file:~/.config/opencode/prompts/build.md}",
       "permission": {
+        // CHANGED: edit/write catch-all "ask" -> "allow". Rule 3 already
+        // requires an explicit human go-ahead in chat before any edit
+        // begins; per-file prompting on top of that was redundant for
+        // T1/T2. Revert to "ask" if you want per-file confirmation back.
         "edit": {
-          "*": "ask",
+          "*": "allow",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
-          "*": "ask",
+          "*": "allow",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
+        // CHANGED: catch-all "ask" -> "allow". Fill in your project's
+        // actual check/build commands as explicit denies if any of them
+        // are destructive (e.g. a script that force-cleans a directory).
         "bash": {
-          "*": "ask",
-          "<CHECK_COMMAND e.g. ./Check.sh*>": "allow",
-          "<BUILD_COMMAND e.g. cargo *>": "allow",
-          "git status*": "allow",
-          "git diff*": "allow",
+          "*": "allow",
           "rm *": "deny",
           "git commit*": "ask",
           "git push*": "deny"
@@ -104,23 +110,19 @@
       "prompt": "{file:~/.config/opencode/prompts/build-hard.md}",
       "permission": {
         "edit": {
-          "*": "ask",
+          "*": "allow",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
-          "*": "ask",
+          "*": "allow",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "bash": {
-          "*": "ask",
-          "<CHECK_COMMAND>": "allow",
-          "<BUILD_COMMAND>": "allow",
-          "git status*": "allow",
-          "git diff*": "allow",
+          "*": "allow",
           "rm *": "deny",
           "git commit*": "ask",
           "git push*": "deny"
@@ -137,6 +139,9 @@
       "prompt": "{file:~/.config/opencode/prompts/build-critical.md}",
       "permission": {
         // Every edit is approved individually here. Do not choose 'always' at a T3 prompt.
+        // UNCHANGED, deliberately — per-edit approval is the T3 mechanism
+        // itself, not incidental friction. Do not widen this the way
+        // build/build-hard were widened above.
         "edit": {
           "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
@@ -149,11 +154,26 @@
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
+        // CHANGED: added read-only inspection commands so a compound
+        // line (e.g. `cd dir; ls | grep foo`) doesn't hit "ask" on every
+        // piece that isn't the exact literal already allowlisted — bash
+        // permission checks each piece of a `;`/`&&`/`|` chain
+        // separately. This does NOT loosen file access; edit/write above
+        // stay per-edit "ask" regardless of what bash allows.
         "bash": {
           "*": "ask",
+          "ls*": "allow",
+          "rg *": "allow",
+          "grep *": "allow",
+          "head *": "allow",
+          "tail *": "allow",
+          "wc *": "allow",
+          "echo *": "allow",
+          "cd *": "allow",
           "<CHECK_COMMAND>": "allow",
           "git status*": "allow",
           "git diff*": "allow",
+          "git log*": "allow",
           "rm *": "deny",
           "git commit*": "ask",
           "git push*": "deny"
@@ -192,14 +212,30 @@
         "write": "deny",
         "grep": "allow",
         "glob": "allow",
+        // CHANGED: same compound-command fix as build-critical above.
+        // ask has no edit/write access at all (denied outright), so this
+        // only widens read-only shell inspection, not file access. Bash
+        // is still ask's one path to touching the filesystem outside
+        // edit/write's reach (mv/cp/curl/wget) — kept explicitly denied.
         "bash": {
           "*": "ask",
           "ls*": "allow",
           "cat *": "allow",
           "rg *": "allow",
+          "grep *": "allow",
+          "head *": "allow",
+          "tail *": "allow",
+          "wc *": "allow",
+          "echo *": "allow",
+          "cd *": "allow",
           "git status*": "allow",
+          "git log*": "allow",
           "git diff*": "allow",
           "rm *": "deny",
+          "mv *": "deny",
+          "cp *": "deny",
+          "curl *": "deny",
+          "wget *": "deny",
           "git commit*": "deny",
           "git push*": "deny"
         },
