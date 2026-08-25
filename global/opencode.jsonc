@@ -10,7 +10,7 @@
       "*.env.example": "allow"
     },
     "bash": {
-      "*": "ask",
+      "*": "allow",
       "ls*": "allow",
       "cat *": "allow",
       "rg *": "allow",
@@ -21,7 +21,17 @@
       "rm *": "deny",
       "git push*": "deny"
     },
+    // CHANGED: external_directory now grants baseline access to outside
+    // paths (reads inherit "allow" from the top-level `read` block per
+    // OpenCode's docs). The `edit` rule below is layered on the same "*"
+    // pattern to require confirmation before any write/edit outside the
+    // workspace. NOTE: OpenCode has an open bug (GH issue #18441) where
+    // external_directory: allow can bypass this edit rule for writes —
+    // verify this actually prompts before trusting it.
     "external_directory": {
+      "*": "allow"
+    },
+    "edit": {
       "*": "ask"
     },
     "doom_loop": "ask"
@@ -101,8 +111,8 @@
         "grep": "allow",
         "glob": "allow",
         "bash": {
-          "*": "ask",
-          "ls*": "allow",
+          "*": "allow",
+          "ls *": "allow",
           "find *": "allow",
           "rg *": "allow",
           "grep *": "allow",
@@ -133,19 +143,19 @@
       "prompt": "{file:./prompts/build.md}",
       "permission": {
         "edit": {
-          "*": "ask",
+          "*": "allow",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
-          "*": "ask",
+          "*": "allow",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "bash": {
-          "*": "ask",
+          "*": "allow",
           "ls*": "allow",
           "rg *": "allow",
           "git status*": "allow",
@@ -170,19 +180,19 @@
       "prompt": "{file:./prompts/build-hard.md}",
       "permission": {
         "edit": {
-          "*": "ask",
+          "*": "allow",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
-          "*": "ask",
+          "*": "allow",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "bash": {
-          "*": "ask",
+          "*": "allow",
           "ls*": "allow",
           "rg *": "allow",
           "git status*": "allow",
@@ -275,7 +285,7 @@
         "glob": "allow",
         "bash": {
           "*": "ask",
-          "ls*": "allow",
+          "ls *": "allow",
           "cat *": "allow",
           "rg *": "allow",
           "git status*": "allow",

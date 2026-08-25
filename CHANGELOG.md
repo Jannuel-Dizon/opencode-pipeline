@@ -5,6 +5,62 @@ process — prompts, commands, templates) or needs a manual look at each
 project's filled `opencode.jsonc` / `AGENTS.md` (structural — new agents,
 changed defaults, changed permission shape).
 
+## 1.6.8
+
+**Manual step required.** Structural change to `global/opencode.jsonc`'s
+permission shape — not a prompt/command/template change. Projects with their
+own `agent` block already override these per-agent, but should review whether
+they want the same loosening applied locally.
+
+Motivation: too much prompt friction during normal use — `arch` was asking
+per-command for anything outside its small bash allowlist, and `build` /
+`build-hard` were asking per-file on every edit despite Rule 3 already
+requiring an explicit human go-ahead in chat before any code gets touched.
+The conversational gate was being enforced twice, once by the agent and once
+by the permission layer.
+
+- **`bash` catch-all changed `"ask"` → `"allow"`, globally and in `arch`,
+  `build`, `build-hard`.** Named destructive commands (`rm *`, `git push*`,
+  `git reset*`, `git checkout*`, `git commit*`) stay explicitly denied or
+  ask, since deny/ask entries after a catch-all still win. `build-critical`
+  is unchanged — its bash catch-all stays `"ask"`.
+- **`edit` and `write` catch-alls changed `"ask"` → `"allow"` in `build` and
+  `build-hard`.** Rationale: the human's go-ahead already happened in chat
+  per Rule 3 before any edit begins; the per-file prompt was a redundant
+  second confirmation for T1/T2. `build-critical` is deliberately **unchanged**
+  — its `edit`/`write` stay `"ask"` per-edit, per the existing project rule
+  that per-edit approval is the T3 mechanism itself, not incidental friction.
+- **`external_directory` catch-all changed `"ask"` → `"allow"`, with a new
+  top-level `edit: "*": "ask"` layered on to try to keep external writes
+  gated while external reads pass through.** This follows OpenCode's
+  documented pattern (external_directory grants baseline access; a matching
+  `edit` rule restricts writes on the same paths) but has **not been
+  verified to actually prompt** — OpenCode has an open upstream bug
+  (`anomalyco/opencode` issue #18441) where `external_directory: "allow"`
+  can bypass `edit` ask/deny rules for writes entirely. Treat this as
+  unconfirmed until tested with a real external write attempt; if it
+  doesn't prompt, this is a gap, not a config error on our side.
+
+**Known risk accepted, not mitigated, in this release:** the `bash`
+catch-all allow is not limited to read-only commands — it also applies
+inside `build` and `build-hard`, which execute real build/check/test
+commands from a spec, and named denies don't cover everything (`sudo`,
+`curl | sh`, `mv`, `cargo publish`, `npm install <pkg>`, etc. all pass as
+`allow`). Combined with `edit`/`write` also now unrestricted in those same
+two agents, a build session can run arbitrary shell and write arbitrary
+files with no prompts at all once past the initial go-ahead. This lands
+hardest on `build`, currently pinned to `nemotron-3-ultra-free` — a model
+not yet run through a real plan→arch→build slice per §3.7. No narrowed
+bash allowlist (e.g. project check/build commands specifically) was
+substituted in this release; that remains a possible follow-up if the
+blast radius turns out to matter in practice.
+
+**Not yet done, per the "verify before promoting" principle:** none of
+this has been run through a real plan→arch→build pass yet. Treat the first
+several sessions on this config the way any tier or permission change
+should be treated — watch closely for anything it lets through that
+shouldn't have, before trusting it as settled.
+
 ## 1.6.6
 
 **Safe to pull.** Prompt and command changes only — no agent, model, or
