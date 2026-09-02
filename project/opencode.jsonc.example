@@ -30,10 +30,12 @@
         },
         "edit": { "*": "deny", ".opencode/handoff/1-plan/**": "allow" },
         "write": { "*": "deny", ".opencode/handoff/1-plan/**": "allow" },
-        "grep": "deny",
+        "grep": "allow",
         "glob": "allow",
         // bash stays fully denied here regardless — no compound-command
         // gap possible since every piece of any command hits this deny.
+        // This is also what keeps `read`'s source-file denies meaningful:
+        // an agent with bash allowed can `cat` around a read deny.
         "bash": "deny",
         "task": { "*": "deny", "explore": "allow" }
       }
@@ -69,22 +71,25 @@
     "build": {
       "mode": "primary",
       "description": "Stage 3, tier T1 (routine).",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "opencode/hy3-free",
       "temperature": 0.1,
       "prompt": "{file:~/.config/opencode/prompts/build.md}",
       "permission": {
-        // CHANGED: edit/write catch-all "ask" -> "allow". Rule 3 already
-        // requires an explicit human go-ahead in chat before any edit
-        // begins; per-file prompting on top of that was redundant for
-        // T1/T2. Revert to "ask" if you want per-file confirmation back.
+        // REVERTED: edit/write catch-all back to "ask". Previously set to
+        // "allow" on the theory that Rule 3's chat go-ahead already
+        // covers it — but that go-ahead is "start the stage," not
+        // "approved for every file this stage touches." The per-edit
+        // prompt is the second, finer-grained checkpoint and isn't
+        // redundant with the first. Set back to "allow" only if you've
+        // deliberately decided you don't want that second checkpoint.
         "edit": {
-          "*": "allow",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
-          "*": "allow",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
@@ -109,14 +114,17 @@
       "temperature": 0.1,
       "prompt": "{file:~/.config/opencode/prompts/build-hard.md}",
       "permission": {
+        // REVERTED: same as build above — edit/write catch-all back to
+        // "ask". T2 is non-obvious logic by definition; it deserves the
+        // per-edit checkpoint at least as much as T1 does.
         "edit": {
-          "*": "allow",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
-          "*": "allow",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
@@ -141,7 +149,7 @@
         // Every edit is approved individually here. Do not choose 'always' at a T3 prompt.
         // UNCHANGED, deliberately — per-edit approval is the T3 mechanism
         // itself, not incidental friction. Do not widen this the way
-        // build/build-hard were widened above.
+        // build/build-hard were widened and then reverted above.
         "edit": {
           "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
@@ -161,22 +169,30 @@
         // separately. This does NOT loosen file access; edit/write above
         // stay per-edit "ask" regardless of what bash allows.
         "bash": {
-          "*": "ask",
-          "ls*": "allow",
-          "rg *": "allow",
-          "grep *": "allow",
-          "head *": "allow",
-          "tail *": "allow",
-          "wc *": "allow",
-          "echo *": "allow",
-          "cd *": "allow",
-          "<CHECK_COMMAND>": "allow",
-          "git status*": "allow",
-          "git diff*": "allow",
-          "git log*": "allow",
-          "rm *": "deny",
-          "git commit*": "ask",
-          "git push*": "deny"
+            "*": "ask",
+            "ls*": "allow",
+            "rg *": "allow",
+            "grep *": "allow",
+            "head *": "allow",
+            "tail *": "allow",
+            "wc *": "allow",
+            "echo *": "allow",
+            "cd *": "allow",
+            "find *": "allow",
+            "xargs grep*": "allow",
+            "cargo check*": "allow",
+            "cargo clippy*": "allow",
+            "cargo test*": "allow",
+            "./Check.sh*": "allow",
+            "git status*": "allow",
+            "git diff*": "allow",
+            "git log*": "allow",
+            "rm *": "deny",
+            "cargo add*": "deny",
+            "cargo update*": "deny",
+            "git commit*": "ask",
+            "git push*": "deny",
+            "*-exec*": "deny"
         },
         "task": { "*": "deny", "explore": "allow" }
       }
@@ -203,7 +219,7 @@
     "ask": {
       "mode": "primary",
       "description": "Casual Q&A, outside the pipeline. No handoff doc, no template, no tier.",
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "opencode/hy3-free",
       "temperature": 0.3,
       "prompt": "{file:~/.config/opencode/prompts/ask.md}",
       "permission": {
@@ -218,26 +234,32 @@
         // is still ask's one path to touching the filesystem outside
         // edit/write's reach (mv/cp/curl/wget) — kept explicitly denied.
         "bash": {
-          "*": "ask",
-          "ls*": "allow",
-          "cat *": "allow",
-          "rg *": "allow",
-          "grep *": "allow",
-          "head *": "allow",
-          "tail *": "allow",
-          "wc *": "allow",
-          "echo *": "allow",
-          "cd *": "allow",
-          "git status*": "allow",
-          "git log*": "allow",
-          "git diff*": "allow",
-          "rm *": "deny",
-          "mv *": "deny",
-          "cp *": "deny",
-          "curl *": "deny",
-          "wget *": "deny",
-          "git commit*": "deny",
-          "git push*": "deny"
+            "*": "ask",
+            "ls*": "allow",
+            "cat *": "allow",
+            "rg *": "allow",
+            "grep *": "allow",
+            "head *": "allow",
+            "tail *": "allow",
+            "wc *": "allow",
+            "echo *": "allow",
+            "cd *": "allow",
+            "find *": "allow",
+            "xargs grep*": "allow",
+            "xargs cat*": "allow",
+            "xargs wc*": "allow",
+            "git status*": "allow",
+            "git log*": "allow",
+            "git diff*": "allow",
+            "cargo tree*": "allow",
+            "rm *": "deny",
+            "mv *": "deny",
+            "cp *": "deny",
+            "curl *": "deny",
+            "wget *": "deny",
+            "git commit*": "deny",
+            "git push*": "deny",
+            "*-exec*": "deny"
         },
         "task": "deny"
       }

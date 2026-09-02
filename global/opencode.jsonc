@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "default_agent": "design",
+  "default_agent": "ask",
   "subagent_depth": 1,
   "permission": {
     "read": {
@@ -21,15 +21,8 @@
       "rm *": "deny",
       "git push*": "deny"
     },
-    // external_directory grants baseline access to outside paths (reads
-    // inherit "allow" from the top-level `read` block). The `edit` rule
-    // below is layered on the same "*" pattern to try to require
-    // confirmation before any write/edit outside the workspace. NOTE:
-    // OpenCode has an open upstream bug (anomalyco/opencode issue #18441)
-    // where external_directory: allow can bypass this edit rule for
-    // writes — unverified whether this actually prompts.
     "external_directory": {
-      "*": "allow"
+      "*": "ask"
     },
     "edit": {
       "*": "ask"
@@ -37,10 +30,59 @@
     "doom_loop": "ask"
   },
   "agent": {
+    "ask": {
+      "mode": "primary",
+      "description": "Casual Q&A, outside the pipeline. No handoff doc, no template, no tier. For quick questions not worth a planning session.",
+      "model": "opencode/hy3-free",
+      "variant": "High",
+      "temperature": 0.3,
+      "prompt": "{file:./prompts/ask.md}",
+      "permission": {
+        "read": {
+          "*": "allow",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": "deny",
+        "write": "deny",
+        "grep": "allow",
+        "glob": "allow",
+        "bash": {
+          "*": "ask",
+          "ls*": "allow",
+          "cat *": "allow",
+          "rg *": "allow",
+          "grep *": "allow",
+          "head *": "allow",
+          "tail *": "allow",
+          "wc *": "allow",
+          "echo *": "allow",
+          "cd *": "allow",
+          "find *": "allow",
+          "xargs grep*": "allow",
+          "xargs cat*": "allow",
+          "xargs wc*": "allow",
+          "git status*": "allow",
+          "git log*": "allow",
+          "git diff*": "allow",
+          "cargo tree*": "allow",
+          "rm *": "deny",
+          "mv *": "deny",
+          "cp *": "deny",
+          "curl *": "deny",
+          "wget *": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "*-exec*": "deny"
+        },
+        "task": "deny"
+      }
+    },
     "design": {
       "mode": "primary",
       "description": "Stage 1. Designs a slice with you. Reads project shape, never implementation bodies. Writes to handoff/1-plan/.",
-      "model": "opencode/deepseek-v4-flash",
+      "model": "opencode-go/gpt-5.6-luna",
+      "variant": "max",
       "temperature": 0.3,
       "prompt": "{file:./prompts/plan.md}",
       "permission": {
@@ -91,7 +133,8 @@
     "arch": {
       "mode": "primary",
       "description": "Stage 2. Verifies a plan against the real codebase, assigns a build tier, writes a spec to handoff/2-spec/. Never edits source.",
-      "model": "opencode/gpt-5.6-luna",
+      "model": "opencode-go/gpt-5.6-luna",
+      "variant": "max",
       "temperature": 0.2,
       "prompt": "{file:./prompts/arch.md}",
       "permission": {
@@ -102,11 +145,13 @@
         },
         "edit": {
           "*": "deny",
-          ".opencode/handoff/2-spec/**": "allow"
+          ".opencode/handoff/2-spec/**": "allow",
+          ".opencode/MAP.md": "allow"
         },
         "write": {
           "*": "deny",
-          ".opencode/handoff/2-spec/**": "allow"
+          ".opencode/handoff/2-spec/**": "allow",
+          ".opencode/MAP.md": "allow"
         },
         "grep": "allow",
         "glob": "allow",
@@ -138,24 +183,25 @@
     "build": {
       "mode": "primary",
       "description": "Stage 3, tier T1 (routine). Implements a T1 spec. Cheap model, mechanical work only.",
-      "model": "opencode/nemotron-3-ultra-free",
+      "model": "opencode/hy3-free",
+      "variant": "High",
       "temperature": 0.1,
       "prompt": "{file:./prompts/build.md}",
       "permission": {
         "edit": {
-          "*": "allow",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
-          "*": "allow",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "bash": {
-          "*": "allow",
+          "*": "ask",
           "ls*": "allow",
           "rg *": "allow",
           "git status*": "allow",
@@ -175,24 +221,25 @@
     "build-hard": {
       "mode": "primary",
       "description": "Stage 3, tier T2 (hard). Implements a T2 spec. Non-obvious logic spanning modules.",
-      "model": "opencode/deepseek-v4-flash",
+      "model": "opencode-go/deepseek-v4-flash",
+      "variant": "max",
       "temperature": 0.1,
       "prompt": "{file:./prompts/build-hard.md}",
       "permission": {
         "edit": {
-          "*": "allow",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
-          "*": "allow",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "deny",
           ".opencode/handoff/2-spec/**": "deny",
           ".opencode/handoff/3-report/**": "allow"
         },
         "bash": {
-          "*": "allow",
+          "*": "ask",
           "ls*": "allow",
           "rg *": "allow",
           "git status*": "allow",
@@ -212,7 +259,8 @@
     "build-critical": {
       "mode": "primary",
       "description": "Stage 3, tier T3 (critical). Safety- or security-critical code only. Narrow scope, per-edit approval, adversarial pass required.",
-      "model": "opencode/claude-opus-5",
+      "model": "opencode-go/glm-5.3",
+      "variant": "max",
       "temperature": 0.1,
       "prompt": "{file:./prompts/build-critical.md}",
       "permission": {
@@ -238,18 +286,21 @@
           "wc *": "allow",
           "echo *": "allow",
           "cd *": "allow",
+          "find *": "allow",
+          "xargs grep*": "allow",
           "cargo check*": "allow",
           "cargo clippy*": "allow",
           "cargo test*": "allow",
           "./Check.sh*": "allow",
           "git status*": "allow",
           "git diff*": "allow",
+          "git log*": "allow",
           "rm *": "deny",
           "cargo add*": "deny",
           "cargo update*": "deny",
           "git commit*": "ask",
           "git push*": "deny",
-          "git reset*": "deny"
+          "*-exec*": "deny"
         },
         "task": {
           "*": "deny",
@@ -260,7 +311,7 @@
     "explore": {
       "mode": "subagent",
       "description": "Read-only lookup. Answers one specific question about the codebase in prose. Returns findings and file:line references, never file dumps.",
-      "model": "opencode/deepseek-v4-flash",
+      "model": "opencode-go/deepseek-v4-flash",
       "temperature": 0.1,
       "prompt": "{file:./prompts/explore.md}",
       "permission": {
@@ -275,48 +326,6 @@
         "write": "deny",
         "bash": "deny",
         "webfetch": "deny",
-        "task": "deny"
-      }
-    },
-    "ask": {
-      "mode": "primary",
-      "description": "Casual Q&A, outside the pipeline. No handoff doc, no template, no tier. For quick questions not worth a planning session.",
-      "model": "opencode/hy3-free",
-      "temperature": 0.3,
-      "prompt": "{file:./prompts/ask.md}",
-      "permission": {
-        "read": {
-          "*": "allow",
-          "*.env": "deny",
-          "*.env.*": "deny"
-        },
-        "edit": "deny",
-        "write": "deny",
-        "grep": "allow",
-        "glob": "allow",
-        "bash": {
-          "*": "ask",
-          "ls*": "allow",
-          "cat *": "allow",
-          "rg *": "allow",
-          "grep *": "allow",
-          "head *": "allow",
-          "tail *": "allow",
-          "wc *": "allow",
-          "echo *": "allow",
-          "cd *": "allow",
-          "git status*": "allow",
-          "git log*": "allow",
-          "git diff*": "allow",
-          "cargo tree*": "allow",
-          "rm *": "deny",
-          "mv *": "deny",
-          "cp *": "deny",
-          "curl *": "deny",
-          "wget *": "deny",
-          "git commit*": "deny",
-          "git push*": "deny"
-        },
         "task": "deny"
       }
     }
