@@ -28,8 +28,8 @@
           "*.env": "deny",
           "*.env.*": "deny"
         },
-        "edit": { "*": "deny", ".opencode/handoff/1-plan/**": "allow" },
-        "write": { "*": "deny", ".opencode/handoff/1-plan/**": "allow" },
+        "edit": { "*": "deny", },
+        "write": { "*": "deny", },
         "grep": "allow",
         "glob": "allow",
         // bash stays fully denied here regardless — no compound-command
@@ -37,7 +37,7 @@
         // This is also what keeps `read`'s source-file denies meaningful:
         // an agent with bash allowed can `cat` around a read deny.
         "bash": "deny",
-        "task": { "*": "deny", "explore": "allow" }
+        "task": { "*": "deny", "explore": "allow", "scribe": "allow" }
       }
     },
 
@@ -49,8 +49,8 @@
       "prompt": "{file:~/.config/opencode/prompts/arch.md}",
       "permission": {
         "read": { "*": "allow", "*.env": "deny", "*.env.*": "deny" },
-        "edit": { "*": "deny", ".opencode/handoff/2-spec/**": "allow" },
-        "write": { "*": "deny", ".opencode/handoff/2-spec/**": "allow" },
+        "edit": { "*": "deny",  },
+        "write": { "*": "deny",  },
         // CHANGED: catch-all "ask" -> "allow". arch only ever needs
         // read-only queries per its prompt; named denies below cover the
         // actual risk (destructive git, accidental commits/pushes). If
@@ -64,7 +64,7 @@
           "git checkout*": "deny",
           "git reset*": "deny"
         },
-        "task": { "*": "deny", "explore": "allow" }
+        "task": { "*": "deny", "explore": "allow", "scribe": "allow" }
       }
     },
 
@@ -84,15 +84,9 @@
         // deliberately decided you don't want that second checkpoint.
         "edit": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         // CHANGED: catch-all "ask" -> "allow". Fill in your project's
         // actual check/build commands as explicit denies if any of them
@@ -103,7 +97,7 @@
           "git commit*": "ask",
           "git push*": "deny"
         },
-        "task": { "*": "deny", "explore": "allow" }
+        "task": { "*": "deny", "explore": "allow", "scribe": "allow" }
       }
     },
 
@@ -119,15 +113,9 @@
         // per-edit checkpoint at least as much as T1 does.
         "edit": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "bash": {
           "*": "allow",
@@ -135,7 +123,7 @@
           "git commit*": "ask",
           "git push*": "deny"
         },
-        "task": { "*": "deny", "explore": "allow" }
+        "task": { "*": "deny", "explore": "allow", "scribe": "allow" }
       }
     },
 
@@ -152,15 +140,9 @@
         // build/build-hard were widened and then reverted above.
         "edit": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         // CHANGED: added read-only inspection commands so a compound
         // line (e.g. `cd dir; ls | grep foo`) doesn't hit "ask" on every
@@ -194,7 +176,7 @@
             "git push*": "deny",
             "*-exec*": "deny"
         },
-        "task": { "*": "deny", "explore": "allow" }
+        "task": { "*": "deny", "explore": "allow", "scribe": "allow" }
       }
     },
 
@@ -210,6 +192,39 @@
         "glob": "allow",
         "edit": "deny",
         "write": "deny",
+        "bash": "deny",
+        "webfetch": "deny",
+        "task": "deny"
+      }
+    },
+
+    "scribe": {
+      "mode": "subagent",
+      "description": "Write-only. Places a finished handoff document at the correct path. Never composes content.",
+      "model": "opencode/big-pickle",
+      "temperature": 0,
+      "prompt": "{file:./prompts/scribe.md}",
+      "permission": {
+        "read": "deny",
+        "grep": "deny",
+        "glob": {
+          "*": "deny",
+          ".opencode/handoff/**": "allow"
+        },
+        "edit": {
+          "*": "deny",
+          ".opencode/handoff/1-plan/**": "allow",
+          ".opencode/handoff/2-spec/**": "allow",
+          ".opencode/handoff/3-report/**": "allow"
+          ".opencode/MAP.md": "allow"
+        },
+        "write": {
+          "*": "deny",
+          ".opencode/handoff/1-plan/**": "allow",
+          ".opencode/handoff/2-spec/**": "allow",
+          ".opencode/handoff/3-report/**": "allow"
+          ".opencode/MAP.md": "allow"
+        },
         "bash": "deny",
         "webfetch": "deny",
         "task": "deny"

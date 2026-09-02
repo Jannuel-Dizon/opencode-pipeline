@@ -115,18 +115,17 @@
         },
         "edit": {
           "*": "deny",
-          ".opencode/handoff/1-plan/**": "allow"
         },
         "write": {
           "*": "deny",
-          ".opencode/handoff/1-plan/**": "allow"
         },
         "grep": "deny",
         "glob": "allow",
         "bash": "deny",
         "task": {
           "*": "deny",
-          "explore": "allow"
+          "explore": "allow",
+          "scribe": "allow"
         }
       }
     },
@@ -145,13 +144,9 @@
         },
         "edit": {
           "*": "deny",
-          ".opencode/handoff/2-spec/**": "allow",
-          ".opencode/MAP.md": "allow"
         },
         "write": {
           "*": "deny",
-          ".opencode/handoff/2-spec/**": "allow",
-          ".opencode/MAP.md": "allow"
         },
         "grep": "allow",
         "glob": "allow",
@@ -176,7 +171,8 @@
         },
         "task": {
           "*": "deny",
-          "explore": "allow"
+          "explore": "allow",
+          "scribe": "allow"
         }
       }
     },
@@ -190,15 +186,9 @@
       "permission": {
         "edit": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "bash": {
           "*": "ask",
@@ -214,7 +204,8 @@
         },
         "task": {
           "*": "deny",
-          "explore": "allow"
+          "explore": "allow",
+          "scribe": "allow"
         }
       }
     },
@@ -228,15 +219,9 @@
       "permission": {
         "edit": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "bash": {
           "*": "ask",
@@ -252,7 +237,8 @@
         },
         "task": {
           "*": "deny",
-          "explore": "allow"
+          "explore": "allow",
+          "scribe": "allow"
         }
       }
     },
@@ -266,15 +252,9 @@
       "permission": {
         "edit": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "write": {
           "*": "ask",
-          ".opencode/handoff/1-plan/**": "deny",
-          ".opencode/handoff/2-spec/**": "deny",
-          ".opencode/handoff/3-report/**": "allow"
         },
         "bash": {
           "*": "ask",
@@ -304,7 +284,8 @@
         },
         "task": {
           "*": "deny",
-          "explore": "allow"
+          "explore": "allow",
+          "scribe": "allow"
         }
       }
     },
@@ -324,6 +305,38 @@
         "glob": "allow",
         "edit": "deny",
         "write": "deny",
+        "bash": "deny",
+        "webfetch": "deny",
+        "task": "deny"
+      }
+    },
+    "scribe": {
+      "mode": "subagent",
+      "description": "Write-only. Places a finished handoff and map document at the correct path. Never composes content.",
+      "model": "opencode/big-pickle",
+      "temperature": 0,
+      "prompt": "{file:./prompts/scribe.md}",
+      "permission": {
+        "read": "deny",
+        "grep": "deny",
+        "glob": {
+          "*": "deny",
+          ".opencode/handoff/**": "allow"
+        },
+        "edit": {
+          "*": "deny",
+          ".opencode/handoff/1-plan/**": "allow",
+          ".opencode/handoff/2-spec/**": "allow",
+          ".opencode/handoff/3-report/**": "allow",
+          ".opencode/MAP.md": "allow"
+        },
+        "write": {
+          "*": "deny",
+          ".opencode/handoff/1-plan/**": "allow",
+          ".opencode/handoff/2-spec/**": "allow",
+          ".opencode/handoff/3-report/**": "allow",
+          ".opencode/MAP.md": "allow"
+        },
         "bash": "deny",
         "webfetch": "deny",
         "task": "deny"

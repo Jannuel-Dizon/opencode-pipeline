@@ -5,6 +5,77 @@ process — prompts, commands, templates) or needs a manual look at each
 project's filled `opencode.jsonc` / `AGENTS.md` (structural — new agents,
 changed defaults, changed permission shape).
 
+## 1.6.9
+
+**Manual step required.** New subagent added to the global config shape,
+plus permission changes across every agent that writes a handoff document
+or `MAP.md`. Projects with their own `agent` block override these per-agent
+and will need this ported by hand if they want it.
+
+Motivation: the primary agents (`design`, `arch`, `build`, `build-hard`,
+`build-critical`) each carry their own copy of the same write-mechanics
+permission block — near-duplicated per-directory `edit`/`write` allows,
+each one a place the absolute-vs-relative-path issue from 1.6.6 or a stem
+mismatch could recur independently. `explore` already showed the pattern
+for pulling a narrow, cheap, single-purpose job out into a subagent; this
+does the same for the write step, not the exploratory-read step.
+
+- **New subagent `scribe`.** Write-only. Takes a `stage` (`plan` | `spec` |
+  `report` | `map`), a `stem`, and fully-composed content from the calling
+  agent, and places it at the correct path. It does not compose content,
+  judge tier, or decide anything — `design`/`arch`/`build*` still own
+  writing the actual document text against the template; `scribe` is pure
+  I/O. Runs on `opencode/hy3-free` at `temperature: 0`, no read/grep/bash/
+  webfetch/task access, `write` scoped to `.opencode/handoff/{1-plan,2-spec,
+  3-report}/**` and `.opencode/MAP.md`, `edit` scoped to `.opencode/MAP.md`
+  only.
+- **Sanity checks live in `scribe`, not the caller.** For plan/spec/report:
+  refuses to write if the content's own `Stem:` header disagrees with the
+  `stem` argument (never silently picks one), and refuses to overwrite an
+  existing file (the caller must resolve a collision explicitly — this is
+  the same "never destroy a prior session's record" concern Rule 7 and the
+  report template's status-authority note already carry, just enforced at
+  the write site now instead of by convention).
+- **`MAP.md` gets a deliberate exception.** It doesn't carry a `Stem:`/
+  `Stage:`/etc. header — it stamps a commit hash instead, per `/map`'s own
+  format — so `scribe` checks for that line instead. It's also regenerated
+  in place rather than created fresh per slice, so `scribe` **does**
+  overwrite it, unlike every other stage. This is the one intentional
+  break from the no-overwrite rule above.
+- **`scribe` still returns full content back to the caller.** Writing the
+  file is not the checkpoint — the primary agent still prints the absolute
+  path and full contents itself per Rule 1. This subagent removes duplicate
+  write-permission plumbing; it does not touch the stop-and-print discipline
+  or Rule 3's go-ahead-before-code gate, which remain entirely with the
+  primary agents.
+- `design`, `arch`, `build`, `build-hard`, `build-critical` gain
+  `task: { "scribe": "allow" }` alongside the existing `explore: "allow"`,
+  and lose their own `.opencode/handoff/**` (and, for `arch`, `.opencode/
+  MAP.md`) entries from `edit`/`write` — those permission grants move to
+  `scribe`. Source-file `edit`/`write` behavior (the 1.6.8 catch-alls,
+  `build-critical`'s per-edit `ask`) is **unchanged** — this release only
+  touches handoff-document and map writes, nothing about source code.
+
+**Known open issue this interacts with, not resolved here:** the
+1.6.7–1.6.8 discrepancy around whether `arch` actually has `/map` write
+permission is still unresolved. Routing `MAP.md` writes through `scribe`
+changes *where* that permission lives but doesn't independently confirm
+which shape is correct — verify that discrepancy and this change together
+in the same test pass, not as two separate unknowns.
+
+**Not yet done, per the "verify before promoting" principle:** this has
+not been run through a real plan→arch→build pass. In particular, unverified:
+whether `task` output survives back to the calling agent's context intact
+enough to satisfy Rule 1's "print full contents" step without truncation
+or summarization by the runtime, and whether a stem-mismatch refusal from
+`scribe` surfaces clearly enough in the primary agent's next action rather
+than being silently swallowed. Test in `local-overrides.jsonc` before
+promoting to `project/opencode.jsonc.example` or the global default.
+
+**Also needs updating once verified, not done in this release:**
+`project/opencode.jsonc.example`'s "must define ALL SEVEN" comment (now
+eight) and the README's agent table.
+
 ## 1.6.8
 
 **Manual step required.** Structural change to `global/opencode.jsonc`'s
