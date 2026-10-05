@@ -22,7 +22,7 @@ DONE ITEMS
     Defaults: done, complete, completed, closed (case-insensitive).
     Add more with --done-status, repeatable:
 
-        ./ingest-workitems.py --from-csv sheet.tsv --out .opencode/workitems \\
+        ./ingest-workitems.py --from-csv sheet.tsv --out .opencode/workitems \
             --done-status shipped --done-status merged
 
 APPFLOWY — FIRST RUN
@@ -63,8 +63,8 @@ APPFLOWY — FIRST RUN
     Only `id` and `title` are required. Anything unmapped is left blank rather
     than guessed at.
 
-        ./ingest-workitems.py --from-appflowy \\
-            --config .opencode/workitems/appflowy.json \\
+        ./ingest-workitems.py --from-appflowy \
+            --config .opencode/workitems/appflowy.json \
             --out .opencode/workitems
 
 OUTPUT (identical for every source)
@@ -86,9 +86,9 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
-# Identifier scheme. E1-S2-T3 by default; for Jira-style keys use
-# r"\b[A-Z][A-Z0-9]+-\d+\b". Override with --id-pattern.
-DEFAULT_ID_PATTERN = r"\b(E\d+-S\d+-T\d+)\b"
+# Identifier scheme: [Prefix]-S[num]-T[num] or [Prefix]-T[num] by default.
+# Matches both E-series (E1-S1-T1) and A-series (A1-S1-T1, A1-T1), or any letter prefix.
+DEFAULT_ID_PATTERN = r"\b([A-Za-z]+\d*-(?:S\d+-)?T\d+)\b"
 
 # Status values (case-insensitive) treated as "done" for the items/done/
 # split. Extend per-run with --done-status; this is read-side sorting only —
@@ -98,7 +98,7 @@ DEFAULT_DONE_STATUSES = {"done", "complete", "completed", "closed"}
 CANONICAL_FIELDS = [
     "id", "title", "description", "dod",
     "priority", "points", "deps", "owner", "status",
-    # Hierarchy, when the source has it (a Level column, or nesting).
+    # Hierarchy, when the source has it (a Level/M column, or nesting).
     # A task's parent story usually carries the "as a X, I want Y so that Z"
     # that the task itself lacks — that is the intent the planner needs.
     "story", "story_title", "user_story", "epic_title",
@@ -106,6 +106,11 @@ CANONICAL_FIELDS = [
 
 
 # ---------------------------------------------------------------- shared ---
+
+def natural_sort_key(s: str):
+    """Sort alphanumeric strings naturally (e.g. E1-S1-T2 before E1-S1-T10)."""
+    return [int(text) if text.isdigit() else text.lower() for text in re.split(r"(\d+)", str(s))]
+
 
 def strip_tags(fragment: str) -> str:
     text = re.sub(r"<[^>]+>", " ", fragment)
@@ -126,10 +131,11 @@ def make_item(raw: dict, id_re: re.Pattern) -> dict:
     if not isinstance(item["deps"], (str, list)):
         item["deps"] = ""
 
-    item["epic"] = ""
-    em = re.match(r"([A-Z]+\d*)", str(item["id"]))
-    if em:
-        item["epic"] = em.group(1)
+    item["epic"] = raw.get("epic") or ""
+    if not item["epic"]:
+        em = re.match(r"([A-Za-z]+\d*)", str(item["id"]))
+        if em:
+            item["epic"] = em.group(1).upper()
 
     if not item["title"]:
         head = re.match(r"(.{0,110}?)(?:\.\s|\s{2,}|$)", item["description"] or "")
@@ -153,7 +159,7 @@ def is_done_item(item: dict, done_statuses: set) -> bool:
 
 
 def write_index(items, out_dir: Path, source_name: str, source_hash: str,
-                 done_statuses: set):
+                done_statuses: set):
     active = [it for it in items if not is_done_item(it, done_statuses)]
     done = [it for it in items if is_done_item(it, done_statuses)]
 
@@ -194,7 +200,7 @@ def write_index(items, out_dir: Path, source_name: str, source_hash: str,
         lines += ["| ID | Title | P | SP | Deps | Owner |",
                   "|---|---|---|---|---|---|"]
 
-    for it in sorted(active, key=lambda x: x["id"]):
+    for it in sorted(active, key=lambda x: natural_sort_key(x["id"])):
         title = it["title"].replace("|", "\\|")
         if len(title) > 80:
             title = title[:77] + "..."
@@ -219,7 +225,7 @@ def write_index(items, out_dir: Path, source_name: str, source_hash: str,
             groups[g]["sp"] += int(it["points"])
 
     lines += ["", "## By epic (active only)", "", "| Epic | Items | SP |", "|---|---|---|"]
-    for g in sorted(groups):
+    for g in sorted(groups, key=natural_sort_key):
         lines.append(f"| {g} | {groups[g]['count']} | {groups[g]['sp']} |")
     lines.append("")
 
@@ -394,10 +400,13 @@ def _load_delimited(src: str):
     import io
 
     if src.startswith(("http://", "https://")):
-        # Works for a Google Sheet published to the web or shared "anyone with
-        # the link". A private sheet returns the HTML sign-in page instead of
-        # CSV — which is what the guard below catches.
-        req = urllib.request.Request(src, headers={"Accept": "text/csv"})
+        req = urllib.request.Request(
+            src,
+            headers={
+                "Accept": "text/csv,text/plain;q=0.9,*/*;q=0.8",
+                "User-Agent": "Mozilla/5.0 (compatible; ingest-workitems/1.0)",
+            },
+        )
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 text = r.read().decode("utf-8", errors="replace")
@@ -410,6 +419,7 @@ def _load_delimited(src: str):
     else:
         text = Path(src).read_text(encoding="utf-8", errors="replace")
 
+    text = text.lstrip("\ufeff")  # strip UTF-8 BOM if present
     sample = text[:4096]
     delim = "\t" if sample.count("\t") > sample.count(",") else ","
     return list(csv.DictReader(io.StringIO(text), delimiter=delim))
@@ -417,7 +427,7 @@ def _load_delimited(src: str):
 
 def parse_csv(src: str, id_re: re.Pattern, id_column: str = ""):
     """
-    Parse a flat table that may encode hierarchy in a `Level` column
+    Parse a flat table that may encode hierarchy in a `Level` or `M` column
     (EPIC / STORY / TASK), as exported from Google Sheets.
 
     Only TASK-level rows become work items — those are the buildable unit.
@@ -444,18 +454,16 @@ def parse_csv(src: str, id_re: re.Pattern, id_column: str = ""):
                     return val
         return default
 
-    has_level = "level" in headers
+    # Supports "Level", "M" (Model/Milestone column), or "Type"
+    has_level = any(k in headers for k in ("level", "m", "type"))
     items = []
     epics, stories = {}, {}
     cur_epic = cur_story = ""
 
     for row in rows:
-        row_id = col(row, id_column, "id", "key", "ticket") if id_column \
-            else col(row, "id", "key", "ticket")
+        row_id = col(row, id_column, "id", "taskid", "key", "ticket", "workitemid") if id_column \
+            else col(row, "id", "taskid", "key", "ticket", "workitemid")
         if not row_id:
-            # Not every board has a column called "ID" — AppFlowy grids often
-            # carry the identifier in the primary text column. Scan the row
-            # rather than requiring the user to rename their columns.
             for value in row.values():
                 found = id_re.search(str(value or ""))
                 if found:
@@ -464,13 +472,16 @@ def parse_csv(src: str, id_re: re.Pattern, id_column: str = ""):
         if not row_id:
             continue
 
-        level = col(row, "level").upper() if has_level else ""
-        title = col(row, "titledescription", "title", "name", "summary", "description")
+        level = col(row, "level", "m", "type").upper() if has_level else ""
+        title = col(row, "titledescription", "title", "task", "name", "summary", "description")
         narrative = col(row, "userstory", "story", "notes", "detail")
 
-        if not level:                       # infer from the id shape
-            depth = row_id.count("-")
-            level = ("EPIC", "STORY", "TASK")[min(depth, 2)]
+        if not level:  # infer from the id shape and regex match
+            if id_re.search(row_id):
+                level = "TASK"
+            else:
+                depth = row_id.count("-")
+                level = ("EPIC", "STORY", "TASK")[min(depth, 2)]
 
         if level == "EPIC":
             cur_epic, cur_story = row_id, ""
@@ -478,9 +489,12 @@ def parse_csv(src: str, id_re: re.Pattern, id_column: str = ""):
             continue
         if level == "STORY":
             cur_story = row_id
-            stories[row_id] = {"title": title, "narrative": narrative,
-                               "owner": col(row, "owner", "assignee"),
-                               "epic": cur_epic}
+            stories[row_id] = {
+                "title": title,
+                "narrative": narrative,
+                "owner": col(row, "owner", "assignee", "assigned"),
+                "epic": cur_epic,
+            }
             continue
         if level not in ("TASK", "SUBTASK"):
             continue
@@ -490,9 +504,13 @@ def parse_csv(src: str, id_re: re.Pattern, id_column: str = ""):
 
         # Prefer the row's own parent id over positional state where derivable.
         parent_story = cur_story
-        m = re.match(r"(.+)-[A-Z]+\d+$", row_id)
-        if m and m.group(1) in stories:
-            parent_story = m.group(1)
+        m = re.match(r"(.+)-[A-Za-z]+\d+$", row_id)
+        if m:
+            prefix = m.group(1)
+            if prefix in stories:
+                parent_story = prefix
+            elif prefix in epics:
+                cur_epic = prefix
 
         story = stories.get(parent_story, {})
         epic_id = story.get("epic", cur_epic)
@@ -505,8 +523,9 @@ def parse_csv(src: str, id_re: re.Pattern, id_column: str = ""):
             "priority": col(row, "p", "priority"),
             "points": col(row, "sp", "points", "storypoints", "estimate"),
             "deps": col(row, "deps", "dependencies", "blockedby"),
-            "owner": col(row, "owner", "assignee") or story.get("owner", ""),
+            "owner": col(row, "owner", "assignee", "assigned") or story.get("owner", ""),
             "status": col(row, "status", "state"),
+            "epic": epic_id,
             "story": parent_story,
             "story_title": story.get("title", ""),
             "user_story": story.get("narrative", ""),
@@ -557,17 +576,6 @@ class AppFlowyError(RuntimeError):
 
 
 class AppFlowy:
-    """Thin client over AppFlowy Cloud's REST API.
-
-    Endpoints per the AppFlowy-Docs openapi reference:
-      POST /gotrue/token?grant_type=password
-      GET  /api/workspace
-      GET  /api/workspace/{ws}/database
-      GET  /api/workspace/{ws}/database/{db}/fields
-      GET  /api/workspace/{ws}/database/{db}/row
-      GET  /api/workspace/{ws}/database/{db}/row/detail?ids=<a,b,c>
-    """
-
     def __init__(self, base_url: str, token: str = "", timeout: int = 30):
         self.base = base_url.rstrip("/")
         self.token = token
@@ -606,7 +614,6 @@ class AppFlowy:
 
     @staticmethod
     def _payload(resp):
-        """Unwrap the common {code, message, data} envelope."""
         if isinstance(resp, dict):
             for key in ("data", "items", "result"):
                 if key in resp:
@@ -629,7 +636,7 @@ class AppFlowy:
 
     def row_details(self, ws, db, ids):
         out = []
-        for i in range(0, len(ids), 50):          # chunked; URLs have length limits
+        for i in range(0, len(ids), 50):
             resp = self._request("GET", f"/api/workspace/{ws}/database/{db}/row/detail",
                                  params={"ids": ",".join(ids[i:i + 50])})
             payload = self._payload(resp)
@@ -662,14 +669,6 @@ def _text_of(v):
 
 
 def _row_cells(row: dict) -> dict:
-    """
-    Flatten a row detail into {field_name: text}.
-
-    AppFlowy has used several row-detail shapes across versions. Rather than
-    pin one, accept the common ones and fall through to a shallow scan. If
-    rows come out empty, run --sample-row: it prints both the raw shape and
-    this flattening so the mismatch is visible rather than silent.
-    """
     container = None
     for key in ("cells", "fields", "data"):
         if isinstance(row.get(key), (dict, list)):
@@ -787,6 +786,8 @@ def main():
     ap.add_argument("--id-pattern", default=DEFAULT_ID_PATTERN)
     ap.add_argument("--id-column", default="",
                     help="column holding the identifier, if not named ID")
+    ap.add_argument("--prefix", help="filter items by ID prefix (e.g. 'A' or 'E')")
+    ap.add_argument("--epic", help="filter items by epic ID (e.g. 'A1' or 'E1')")
     ap.add_argument("--done-status", action="append", default=[],
                     help="additional status value (case-insensitive) treated "
                          "as done, sorted into items/done/. Repeatable. "
@@ -811,9 +812,6 @@ def main():
     if not (args.from_html or args.from_csv or args.from_appflowy):
         ap.error("pick at least one source: --from-html, --from-csv, --from-appflowy")
 
-    # Sources are merged in the order given here; the first to supply a
-    # non-empty value for a field wins. Content-rich sources first, live
-    # status overlays last.
     sources = []
     try:
         if args.from_html:
@@ -852,6 +850,14 @@ def main():
     for it in items:
         it.setdefault("_sources", [sources[0][0]])
 
+    # Optional prefix or epic filtering
+    if args.prefix:
+        pref = args.prefix.strip().upper()
+        items = [i for i in items if i["id"].upper().startswith(pref)]
+    if args.epic:
+        target_epic = args.epic.strip().upper()
+        items = [i for i in items if (i.get("epic") or "").upper() == target_epic]
+
     source_name = " + ".join(label for label, _ in sources)
     source_hash = hashlib.sha256(
         json.dumps(sorted(i["id"] for i in items)).encode()).hexdigest()[:12]
@@ -867,21 +873,16 @@ def main():
           f"source hash {source_hash}")
 
     if args.dry_run:
-        for it in sorted(items, key=lambda x: x["id"])[:10]:
+        for it in sorted(items, key=lambda x: natural_sort_key(x["id"]))[:15]:
             done_flag = " [done]" if is_done_item(it, done_statuses) else ""
             print(f"  {it['id']:<14}{it['priority']:<4}{str(it['points']):>3}SP  "
                   f"{it['title'][:58]}{done_flag}")
-        if len(items) > 10:
-            print(f"  ... and {len(items) - 10} more")
+        if len(items) > 15:
+            print(f"  ... and {len(items) - 15} more")
         return 0
 
     args.out.mkdir(parents=True, exist_ok=True)
 
-    # Preflight: would this run remove most of what's already there? More
-    # often a --from-* flag left off a multi-source command than a real cull.
-    # Check BEFORE writing anything — index and items/ must never disagree,
-    # so either both update together or neither does. Checks items/ and
-    # items/done/ together, since a ticket legitimately moves between them.
     items_dir = args.out / "items"
     done_dir = items_dir / "done"
     existing = []
@@ -897,7 +898,7 @@ def main():
     if stale and suspicious and not args.force_prune:
         print(f"\nWARNING: this run would remove {len(stale)} of {len(existing)} "
               f"existing item files:", file=sys.stderr)
-        for f in sorted(stale, key=lambda p: p.stem)[:15]:
+        for f in sorted(stale, key=lambda p: natural_sort_key(p.stem))[:15]:
             print(f"    {f.stem}", file=sys.stderr)
         if len(stale) > 15:
             print(f"    ... and {len(stale) - 15} more", file=sys.stderr)

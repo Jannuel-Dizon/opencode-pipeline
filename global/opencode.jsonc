@@ -33,8 +33,9 @@
     "ask": {
       "mode": "primary",
       "description": "Casual Q&A, outside the pipeline. No handoff doc, no template, no tier. For quick questions not worth a planning session.",
-      "model": "opencode/hy3-free",
-      "variant": "High",
+      // "model": "opencode-go/deepseek-v4-flash",
+      "model": "opencode-go/glm-5.3-flash",
+      "variant": "low",
       "temperature": 0.3,
       "prompt": "{file:./prompts/ask.md}",
       "permission": {
@@ -47,6 +48,8 @@
         "write": "deny",
         "grep": "allow",
         "glob": "allow",
+        "webfetch": "allow",
+        "websearch": "allow",
         "bash": {
           "*": "ask",
           "ls*": "allow",
@@ -81,8 +84,9 @@
     "design": {
       "mode": "primary",
       "description": "Stage 1. Designs a slice with you. Reads project shape, never implementation bodies. Writes to handoff/1-plan/.",
-      "model": "opencode-go/gpt-5.6-luna",
-      "variant": "max",
+      // "model": "opencode-go/deepseek-v4-flash",
+      "model": "opencode-go/glm-5.3-flash",
+      "variant": "high",
       "temperature": 0.3,
       "prompt": "{file:./prompts/plan.md}",
       "permission": {
@@ -132,7 +136,8 @@
     "arch": {
       "mode": "primary",
       "description": "Stage 2. Verifies a plan against the real codebase, assigns a build tier, writes a spec to handoff/2-spec/. Never edits source.",
-      "model": "opencode-go/gpt-5.6-luna",
+      // "model": "opencode-go/deepseek-v4-flash",
+      "model": "opencode-go/glm-5.3-flash",
       "variant": "max",
       "temperature": 0.2,
       "prompt": "{file:./prompts/arch.md}",
@@ -179,8 +184,9 @@
     "build": {
       "mode": "primary",
       "description": "Stage 3, tier T1 (routine). Implements a T1 spec. Cheap model, mechanical work only.",
-      "model": "opencode/hy3-free",
-      "variant": "High",
+      // "model": "opencode-go/deepseek-v4-flash",
+      "model": "opencode-go/glm-5.3-flash",
+      "variant": "low",
       "temperature": 0.1,
       "prompt": "{file:./prompts/build.md}",
       "permission": {
@@ -212,8 +218,9 @@
     "build-hard": {
       "mode": "primary",
       "description": "Stage 3, tier T2 (hard). Implements a T2 spec. Non-obvious logic spanning modules.",
-      "model": "opencode-go/deepseek-v4-flash",
-      "variant": "max",
+      // "model": "opencode-go/deepseek-v4-flash",
+      "model": "opencode-go/glm-5.3-flash",
+      "variant": "high",
       "temperature": 0.1,
       "prompt": "{file:./prompts/build-hard.md}",
       "permission": {
@@ -245,7 +252,8 @@
     "build-critical": {
       "mode": "primary",
       "description": "Stage 3, tier T3 (critical). Safety- or security-critical code only. Narrow scope, per-edit approval, adversarial pass required.",
-      "model": "opencode-go/glm-5.3",
+      // "model": "opencode-go/deepseek-v4-flash",
+      "model": "opencode-go/glm-5.3-flash",
       "variant": "max",
       "temperature": 0.1,
       "prompt": "{file:./prompts/build-critical.md}",
@@ -292,7 +300,8 @@
     "explore": {
       "mode": "subagent",
       "description": "Read-only lookup. Answers one specific question about the codebase in prose. Returns findings and file:line references, never file dumps.",
-      "model": "opencode-go/deepseek-v4-flash",
+      // "model": "opencode-go/deepseek-v4-flash",
+      "model": "opencode-go/glm-5.3-flash",
       "temperature": 0.1,
       "prompt": "{file:./prompts/explore.md}",
       "permission": {
@@ -313,7 +322,7 @@
     "scribe": {
       "mode": "subagent",
       "description": "Write-only. Places a finished handoff and map document at the correct path. Never composes content.",
-      "model": "opencode/big-pickle",
+      "model": "opencode-go/hy3",
       "temperature": 0,
       "prompt": "{file:./prompts/scribe.md}",
       "permission": {
@@ -324,14 +333,14 @@
           ".opencode/handoff/**": "allow"
         },
         "edit": {
-          "*": "deny",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "allow",
           ".opencode/handoff/2-spec/**": "allow",
           ".opencode/handoff/3-report/**": "allow",
           ".opencode/MAP.md": "allow"
         },
         "write": {
-          "*": "deny",
+          "*": "ask",
           ".opencode/handoff/1-plan/**": "allow",
           ".opencode/handoff/2-spec/**": "allow",
           ".opencode/handoff/3-report/**": "allow",

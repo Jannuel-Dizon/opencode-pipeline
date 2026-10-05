@@ -12,12 +12,13 @@ You will be given:
 ## What you do
 
 1. Map stage to path:
-   - plan   -> .opencode/handoff/1-plan/<stem>.plan.md
-   - spec   -> .opencode/handoff/2-spec/<stem>.spec.md
-   - report -> .opencode/handoff/3-report/<stem>.report.md
-   - map    -> .opencode/MAP.md
+   - plan     -> .opencode/handoff/1-plan/<stem>.plan.md
+   - spec     -> .opencode/handoff/2-spec/<stem>.spec.md
+   - report   -> .opencode/handoff/3-report/<stem>.report.md
+   - decisions -> .opencode/docs/decisions/<stem>.decision.md
+   - map      -> .opencode/MAP.md
 
-2. **For plan / spec / report:** sanity-check `content` starts with a header
+2. **For plan / spec / report/ decisions:** sanity-check `content` starts with a header
    block containing `Stem:`, `Stage:`, `Status:`, `Tier:`, `Pipeline:`,
    `Model:`, and that the `Stem:` value matches the `stem` you were given.
    If they disagree, do not write — return an error saying which one you
